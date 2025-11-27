@@ -1,6 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import { ngrok } from "vite-plugin-ngrok";
+import tailwindcss from "@tailwindcss/vite";
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -10,6 +10,7 @@ export default defineConfig({
         plugins: [["babel-plugin-react-compiler"]],
       },
     }),
+    tailwindcss(),
   ],
   server: {
     allowedHosts: ["risky-unutterably-gia.ngrok-free.dev"],
