@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <title>RO 道具交易所 · DEMO</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+    <!-- 提示訊息區 -->
+    <div
+    id="message"
+    class="hidden max-w-md mx-auto rounded-xl px-4 py-2 text-xs text-center border"
+    ></div>
+
+  <input type="hidden" id="discord_id" />
+  <input type="hidden" id="discord_name" />
+  <body class="min-h-screen bg-slate-950 text-slate-100">
+    <!-- 背景漸層 -->
+    <div
+      class="pointer-events-none fixed inset-0 opacity-60"
+      style="
+        background: radial-gradient(circle at 0% 0%, rgba(168, 85, 247, 0.35), transparent 55%),
+                    radial-gradient(circle at 100% 0%, rgba(59, 130, 246, 0.35), transparent 55%),
+                    radial-gradient(circle at 50% 100%, rgba(239, 68, 68, 0.25), transparent 55%);
+      "
+    ></div>
+
+    <div class="relative z-10 max-w-6xl mx-auto px-6 py-4 flex flex-col gap-4">
+      <!-- 頂部 Navbar -->
+      <header
+        class="flex items-center justify-between px-6 py-3 rounded-2xl bg-slate-950/80 border border-slate-800 shadow-[0_0_40px_rgba(15,23,42,0.9)]"
+      >
+        <div class="flex items-center gap-3">
+          <div
+            class="w-8 h-8 rounded-xl bg-gradient-to-br from-fuchsia-500 to-sky-500 flex items-center justify-center text-xs font-bold"
+          >
+            RO
+          </div>
+          <div>
+            <div class="text-sm font-semibold tracking-wide">RO 道具交易所</div>
+            <div class="text-[11px] text-slate-400">
+              Virtual Item Exchange · Demo
+            </div>
+          </div>
+        </div>
+
+        <button
+          id="loginButton"
+          class="px-5 py-2 rounded-full bg-gradient-to-r from-fuchsia-500 to-indigo-500 text-sm font-semibold shadow-lg shadow-fuchsia-500/50 hover:from-fuchsia-400 hover:to-indigo-400 transition"
+        >
+          登入
+        </button>
+      </header>
+
+      <!-- 主內容 -->
+      <main class="grid gap-6 lg:grid-cols-4">
+        <!-- ================= 左側：道具列表 ================= -->
+        <section
+          class="lg:col-span-1 rounded-3xl bg-slate-950/90 border border-slate-900/80 shadow-[0_0_60px_rgba(15,23,42,1)] flex flex-col"
+        >
+          <div class="px-5 pt-4 pb-2 border-b border-slate-800/80">
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-semibold">道具列表</span>
+            </div>
+            <div class="mt-3 relative">
+              <span
+                class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-500"
+                >🔍</span
+              >
+              <input
+                id="itemSearch"
+                type="text"
+                placeholder="搜尋道具..."
+                class="w-full pl-8 pr-3 py-1.5 rounded-full bg-slate-900/80 border border-slate-700/70 text-xs focus:outline-none focus:ring-1 focus:ring-fuchsia-500/70"
+              />
+            </div>
+          </div>
+
+          <div id="itemList" class="flex-1 overflow-y-auto px-3 pb-4 pt-2 space-y-2 text-xs">
+            <!-- 道具項目由 JS 填入 -->
+          </div>
+        </section>
+
+        <!-- ================= 中間：Orderbook（賣單 / 買單） ================= -->
+        <section class="lg:col-span-2 flex flex-col gap-4">
+          <!-- 道具摘要 -->
+          <div
+            class="rounded-3xl bg-slate-950/90 border border-slate-900/80 px-6 py-4 flex items-center justify-between shadow-[0_0_50px_rgba(15,23,42,0.9)]"
+          >
+            <div>
+              <div class="text-[11px] text-slate-400 mb-1">當前道具</div>
+              <div id="selectedItemName" class="text-lg font-semibold">
+                尚未選擇道具
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="text-[11px] text-slate-400 mb-1">最後成交價（示意）</div>
+              <div id="selectedItemPrice" class="text-base font-semibold text-amber-300">
+                —
+              </div>
+            </div>
+          </div>
+
+          <!-- 賣單 (Asks) -->
+          <div
+            class="rounded-3xl bg-slate-950/90 border border-slate-900/80 px-6 py-4 shadow-[0_0_60px_rgba(15,23,42,0.9)]"
+          >
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2">
+                <div class="h-px w-6 bg-fuchsia-400/80 rounded-full"></div>
+                <span class="text-sm font-semibold text-fuchsia-200">賣單 (Asks)</span>
+              </div>
+            </div>
+
+            <div
+              class="grid grid-cols-3 text-[11px] text-slate-400 border-b border-slate-800 pb-1 mb-1"
+            >
+              <span>價格</span>
+              <span>數量</span>
+              <span class="text-right">賣家</span>
+            </div>
+
+            <div id="asksList" class="space-y-1 max-h-48 overflow-y-auto text-xs">
+              <p class="text-slate-500 text-[11px]">
+                請先在左側選擇道具，這裡會顯示賣單。
+              </p>
+            </div>
+          </div>
+
+          <!-- 買單 (Bids) -->
+          <div
+            class="rounded-3xl bg-slate-950/90 border border-slate-900/80 px-6 py-4 shadow-[0_0_60px_rgba(15,23,42,0.9)]"
+          >
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2">
+                <div class="h-px w-6 bg-emerald-400/80 rounded-full"></div>
+                <span class="text-sm font-semibold text-emerald-200">買單 (Bids)</span>
+              </div>
+            </div>
+
+            <div
+              class="grid grid-cols-3 text-[11px] text-slate-400 border-b border-slate-800 pb-1 mb-1"
+            >
+              <span>價格</span>
+              <span>數量</span>
+              <span class="text-right">買家</span>
+            </div>
+
+            <div id="bidsList" class="space-y-1 max-h-48 overflow-y-auto text-xs">
+              <p class="text-slate-500 text-[11px]">
+                請先在左側選擇道具，這裡會顯示買單。
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= 右側：交易操作 + 帳戶資訊 ================= -->
+        <section class="lg:col-span-1 flex flex-col gap-4">
+          <!-- 交易操作 -->
+          <div
+            class="rounded-3xl bg-slate-950/90 border border-slate-900/80 px-6 py-5 shadow-[0_0_60px_rgba(15,23,42,0.9)]"
+          >
+            <div class="text-sm font-semibold text-center mb-4 text-fuchsia-100">
+              交易操作
+            </div>
+
+            <div class="space-y-3 text-xs">
+              <div>
+                <label class="block mb-1 text-slate-300">價格 (Z)</label>
+                <input
+                  type="number"
+                  id="price"
+                  min="0"
+                  step="1"
+                  class="w-full rounded-xl bg-slate-900/90 border border-slate-700/80 px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-fuchsia-500/70"
+                  placeholder="輸入價格..."
+                />
+              </div>
+
+              <div>
+                <label class="block mb-1 text-slate-300">數量</label>
+                <input
+                  type="number"
+                  id="qty"
+                  min="1"
+                  step="1"
+                  value="1"
+                  class="w-full rounded-xl bg-slate-900/90 border border-slate-700/80 px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-fuchsia-500/70"
+                  placeholder="輸入數量..."
+                />
+              </div>
+
+              <div class="flex items-center justify-between bg-slate-900/70 rounded-xl px-3 py-2">
+                <span class="text-slate-300 text-xs">總價：</span>
+                <span id="totalPrice" class="text-amber-300 font-semibold text-sm">—</span>
+              </div>
+
+              <div class="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  id="buyButton"
+                  class="flex-1 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-xs font-semibold shadow-md shadow-emerald-500/40 transition"
+                >
+                  買入
+                </button>
+                <button
+                  type="button"
+                  id="sellButton"
+                  class="flex-1 py-2 rounded-xl bg-rose-500 hover:bg-rose-400 text-xs font-semibold shadow-md shadow-rose-500/40 transition"
+                >
+                  賣出
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 帳戶資訊 -->
+          <div
+            class="flex-1 rounded-3xl bg-slate-950/90 border border-slate-900/80 px-6 py-5 shadow-[0_0_60px_rgba(15,23,42,0.9)]"
+          >
+            <div class="text-sm font-semibold text-center mb-4">帳戶資訊</div>
+
+            <div id="accountInfoGuest" class="text-xs text-slate-400 text-center mt-4">
+              請先登入以查看您的掛單資訊。
+            </div>
+
+            <div id="accountInfo" class="hidden flex flex-col gap-3 text-xs">
+              <div>
+                <div class="text-[11px] text-slate-400">用戶</div>
+                <div
+                  id="accountUserLabel"
+                  class="mt-0.5 font-semibold text-slate-100 truncate"
+                ></div>
+              </div>
+
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-[11px] text-slate-400">我的掛單</span>
+                </div>
+                <div
+                  id="myOrders"
+                  class="space-y-1 max-h-40 overflow-y-auto border border-slate-800 rounded-xl p-2 bg-slate-900/60"
+                ></div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      // =======================
+      // 設定 API Base URL
+      // =======================
+      //const API_BASE = "http://127.0.0.1:8000"; // 改成你的 FastAPI / ngrok 網址
+      const API_BASE = "https://lilyana-nonsyntonic-marilu.ngrok-free.dev";
+      const NGROK_BYPASS_HEADER = { "ngrok-skip-browser-warning": "true" };
+      let currentUser = null;
+      let selectedItem = null;
+
+      // DOM
+      const messageBox = document.getElementById("message");
+      const loginButton = document.getElementById("loginButton");
+
+      const itemList = document.getElementById("itemList");
+      const itemSearch = document.getElementById("itemSearch");
+
+      const selectedItemName = document.getElementById("selectedItemName");
+      const selectedItemPrice = document.getElementById("selectedItemPrice");
+
+      const asksList = document.getElementById("asksList");
+      const bidsList = document.getElementById("bidsList");
+
+      const priceInput = document.getElementById("price");
+      const qtyInput = document.getElementById("qty");
+      const totalPriceSpan = document.getElementById("totalPrice");
+
+      const buyButton = document.getElementById("buyButton");
+      const sellButton = document.getElementById("sellButton");
+
+      const accountInfoGuest = document.getElementById("accountInfoGuest");
+      const accountInfo = document.getElementById("accountInfo");
+      const accountUserLabel = document.getElementById("accountUserLabel");
+      const myOrdersDiv = document.getElementById("myOrders");
+
+      // Discord inputs (在 form 裡)
+      const discordIdInput = document.getElementById("discord_id");
+      const discordNameInput = document.getElementById("discord_name");
+
+      // =======================
+      // Helper：訊息
+      // =======================
+      function showMessage(text, type = "success") {
+        messageBox.textContent = text;
+        messageBox.className =
+          "max-w-md mx-auto rounded-xl px-4 py-2 text-xs text-center border " +
+          (type === "success"
+            ? "bg-emerald-500/10 text-emerald-200 border-emerald-500/50"
+            : "bg-rose-500/10 text-rose-200 border-rose-500/50");
+      }
+      function clearMessage() {
+        messageBox.className = "hidden";
+        messageBox.textContent = "";
+      }
+
+      // =======================
+      // 登入 / 登出
+      // =======================
+      function renderAuthUI() {
+        if (!currentUser) {
+          loginButton.textContent = "登入";
+          loginButton.classList.remove("bg-emerald-500");
+          loginButton.classList.add("bg-gradient-to-r", "from-fuchsia-500", "to-indigo-500");
+          accountInfoGuest.classList.remove("hidden");
+          accountInfo.classList.add("hidden");
+
+          discordIdInput.disabled = false;
+          discordNameInput.disabled = false;
+          discordIdInput.value = "";
+          discordNameInput.value = "";
+
+          myOrdersDiv.innerHTML = "";
+        } else {
+          const label =
+            currentUser.discord_name && currentUser.discord_name.trim()
+              ? currentUser.discord_name
+              : currentUser.discord_id;
+
+          loginButton.textContent = label;
+          loginButton.className =
+            "px-5 py-2 rounded-full bg-emerald-500 hover:bg-emerald-400 text-sm font-semibold shadow-lg shadow-emerald-500/50 transition";
+
+          accountInfoGuest.classList.add("hidden");
+          accountInfo.classList.remove("hidden");
+          accountUserLabel.textContent = label;
+
+          discordIdInput.disabled = true;
+          discordNameInput.disabled = true;
+          discordIdInput.value = currentUser.discord_id;
+          discordNameInput.value = currentUser.discord_name || "";
+
+          loadMyOrders();
+        }
+      }
+
+      loginButton.addEventListener("click", () => {
+        if (!currentUser) {
+          const discordId = window.prompt("請輸入 Discord ID（必填）");
+          if (!discordId) return;
+          const discordName = window.prompt("請輸入 Discord 暱稱（可留空）") || "";
+
+          currentUser = {
+            discord_id: discordId.trim(),
+            discord_name: discordName.trim(),
+          };
+          localStorage.setItem("virtual_exchange_user", JSON.stringify(currentUser));
+          renderAuthUI();
+        } else {
+          const ok = window.confirm("要登出目前帳號嗎？");
+          if (!ok) return;
+          currentUser = null;
+          localStorage.removeItem("virtual_exchange_user");
+          renderAuthUI();
+        }
+      });
+
+      // =======================
+      // 道具列表
+      // =======================
+      let allItems = [];
+
+      function renderItemList(filter = "") {
+        const q = filter.trim().toLowerCase();
+        itemList.innerHTML = "";
+        const filtered = allItems.filter((item) => {
+          if (!q) return true;
+          return (
+            item.name.toLowerCase().includes(q) ||
+            item.game.toLowerCase().includes(q) ||
+            String(item.id).includes(q)
+          );
+        });
+
+        if (filtered.length === 0) {
+          itemList.innerHTML =
+            '<p class="text-slate-500 text-[11px] px-2 mt-2">找不到符合條件的道具。</p>';
+          return;
+        }
+
+        filtered.forEach((item) => {
+          const row = document.createElement("button");
+          row.type = "button";
+          row.dataset.id = item.id;
+          row.className =
+            "w-full text-left rounded-2xl px-4 py-3 bg-slate-900/80 border border-slate-800/80 hover:border-fuchsia-500/60 hover:bg-slate-900/95 transition flex flex-col gap-0.5";
+          row.innerHTML = `
+            <div class="flex items-center justify-between">
+              <div class="text-[13px] font-semibold">${item.name}</div>
+              <div class="text-[11px] text-emerald-300">遊戲：${item.game}</div>
+            </div>
+            <div class="flex items-center justify-between text-[11px] text-slate-400">
+              <span>模板 ID：${item.id}</span>
+              <span>稀有度：${item.rarity}</span>
+            </div>
+          `;
+          row.addEventListener("click", () => {
+            selectItem(item);
+            // 高亮
+            Array.from(itemList.children).forEach((c) =>
+              c.classList.remove("ring-2", "ring-fuchsia-500/80")
+            );
+            row.classList.add("ring-2", "ring-fuchsia-500/80");
+          });
+          itemList.appendChild(row);
+        });
+      }
+
+      async function loadItemTemplates() {
+        console.log("[loadItemTemplates] start, API_BASE =", API_BASE);
+        try {
+            const res = await fetch(`${API_BASE}/api/item-templates`, {
+            headers: NGROK_BYPASS_HEADER,
+            });
+            console.log("[loadItemTemplates] status =", res.status);
+
+            const text = await res.text();
+            console.log("[loadItemTemplates] raw response =", text);
+
+            // 如果不是 JSON，就不要 parse，下方直接 return
+            let data;
+            try {
+            data = JSON.parse(text);
+            } catch (e) {
+            console.error("不是合法 JSON，可能是 HTML 錯誤頁");
+            showMessage("載入道具列表失敗：後端沒有回 JSON（可能是路徑或 ngrok 問題）", "error");
+            return;
+            }
+
+            if (!Array.isArray(data)) {
+            console.error("item-templates 回傳不是 array：", data);
+            throw new Error("API 回傳格式錯誤");
+            }
+
+            allItems = data;
+          renderItemList();
+          // 自動選第一個
+          if (data.length > 0) {
+            selectItem(data[0]);
+            const firstButton = itemList.querySelector("button");
+            if (firstButton) {
+              firstButton.classList.add("ring-2", "ring-fuchsia-500/80");
+            }
+          }
+        } catch (err) {
+          console.error("載入道具列表錯誤：", err);
+          showMessage("載入道具列表失敗，請確認後端是否啟動。", "error");
+        }
+      }
+
+      itemSearch.addEventListener("input", () => {
+        renderItemList(itemSearch.value);
+      });
+
+      function selectItem(item) {
+        selectedItem = item;
+        selectedItemName.textContent = item.name;
+        // 沒有實際價格，示意用：id * 1000
+        selectedItemPrice.textContent = `${(item.id * 1000).toLocaleString()} Z (示意)`;
+        loadOrderbook(item.id);
+      }
+
+      // =======================
+      // Orderbook
+      // =======================
+      async function loadOrderbook(itemId) {
+        await Promise.all([
+          loadOrderbookSide(itemId, "SELL", asksList),
+          loadOrderbookSide(itemId, "BUY", bidsList),
+        ]);
+      }
+
+      async function loadOrderbookSide(itemId, side, targetDiv) {
+        if (!itemId) {
+          targetDiv.innerHTML =
+            '<p class="text-slate-500 text-[11px]">請先選擇道具。</p>';
+          return;
+        }
+
+        try {
+          const res = await fetch(
+            `${API_BASE}/api/orderbook/${itemId}?side=${encodeURIComponent(side)}`,
+            {
+                headers: NGROK_BYPASS_HEADER,
+            }
+          );
+          if (!res.ok) {
+            throw new Error(await res.text());
+          }
+          const data = await res.json();
+          if (!Array.isArray(data)) throw new Error("orderbook 回傳不是陣列");
+
+          if (data.length === 0) {
+            const msg =
+              side === "SELL"
+                ? "目前沒有賣單，搶先掛第一筆吧！"
+                : "目前沒有買單，搶先開第一筆收購吧！";
+            targetDiv.innerHTML = `<p class="text-slate-500 text-[11px]">${msg}</p>`;
+            return;
+          }
+
+          targetDiv.innerHTML = "";
+          data.forEach((order) => {
+            const row = document.createElement("div");
+            row.className =
+              "grid grid-cols-3 items-center rounded-xl px-3 py-1.5 bg-slate-900/80 border border-slate-800/80 text-[11px]";
+            row.innerHTML = `
+              <div class="text-amber-300 font-semibold">
+                ${Number(order.price).toLocaleString()}
+              </div>
+              <div class="text-sky-300">${order.qty}</div>
+              <div class="text-right text-slate-400 truncate">
+                ${order.discord_name || order.discord_id}
+              </div>
+            `;
+            targetDiv.appendChild(row);
+          });
+        } catch (err) {
+          console.error("載入 orderbook 錯誤：", err);
+          targetDiv.innerHTML =
+            '<p class="text-rose-400 text-[11px]">載入掛單失敗。</p>';
+        }
+      }
+
+      // =======================
+      // 我的掛單
+      // =======================
+      async function loadMyOrders() {
+        if (!currentUser) return;
+        try {
+          const res = await fetch(
+            `${API_BASE}/api/orders/by-user/${encodeURIComponent(
+              currentUser.discord_id
+            )}`,
+            {
+                headers: NGROK_BYPASS_HEADER,
+            }
+          );
+          if (!res.ok) throw new Error(await res.text());
+          const data = await res.json();
+          if (!Array.isArray(data)) throw new Error("my-orders 回傳不是陣列");
+
+          if (data.length === 0) {
+            myOrdersDiv.innerHTML =
+              '<p class="text-slate-500 text-[11px]">目前沒有掛單。</p>';
+            return;
+          }
+
+          myOrdersDiv.innerHTML = "";
+          data.forEach((order) => {
+            const row = document.createElement("div");
+            row.className =
+              "flex items-center justify-between rounded-lg bg-slate-900/90 border border-slate-800/90 px-2 py-1";
+            row.innerHTML = `
+              <div class="text-[11px]">
+                <div>
+                  <span class="${
+                    order.side === "BUY" ? "text-emerald-300" : "text-rose-300"
+                  } font-semibold">
+                    ${order.side}
+                  </span>
+                  ｜ <span class="text-amber-300">${Number(
+                    order.price
+                  ).toLocaleString()}</span>
+                  ｜ <span class="text-sky-300">${order.qty}</span>
+                </div>
+                <div class="text-[10px] text-slate-500">
+                  item #${order.item_template_id} ｜ order #${order.id}
+                </div>
+              </div>
+            `;
+            myOrdersDiv.appendChild(row);
+          });
+        } catch (err) {
+          console.error("載入個人掛單錯誤：", err);
+          myOrdersDiv.innerHTML =
+            '<p class="text-rose-400 text-[11px]">載入個人掛單時發生錯誤。</p>';
+        }
+      }
+
+      // =======================
+      // 交易操作：計算總價 + 建立訂單
+      // =======================
+      function updateTotal() {
+        const p = Number(priceInput.value);
+        const q = Number(qtyInput.value);
+        if (!isNaN(p) && !isNaN(q) && q > 0) {
+          totalPriceSpan.textContent = `${(p * q).toLocaleString()} Z`;
+        } else {
+          totalPriceSpan.textContent = "—";
+        }
+      }
+
+      priceInput.addEventListener("input", updateTotal);
+      qtyInput.addEventListener("input", updateTotal);
+
+      async function submitOrder(side) {
+        clearMessage();
+
+        let discord_id = discordIdInput.value.trim();
+        let discord_name = discordNameInput.value.trim();
+
+        if (currentUser) {
+          discord_id = currentUser.discord_id;
+          discord_name = currentUser.discord_name || "";
+        }
+
+        if (!discord_id) {
+          showMessage("請登入後再操作。", "error");
+          return;
+        }
+        if (!selectedItem) {
+          showMessage("請先從左側選擇道具。", "error");
+          return;
+        }
+
+        const price = Number(priceInput.value);
+        const qty = Number(qtyInput.value);
+        if (isNaN(price) || price < 0) {
+          showMessage("價格格式不正確。", "error");
+          return;
+        }
+        if (isNaN(qty) || qty < 1) {
+          showMessage("數量格式不正確。", "error");
+          return;
+        }
+
+        const payload = {
+          discord_id,
+          discord_name: discord_name || null,
+          item_template_id: selectedItem.id,
+          side,
+          price,
+          qty,
+          note: null,
+        };
+
+        try {
+          const res = await fetch(`${API_BASE}/api/orders`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json",NGROK_BYPASS_HEADER, },
+            body: JSON.stringify(payload),
+          });
+          if (!res.ok) {
+            const body = await res.json().catch(() => ({}));
+            throw new Error(body.detail || "建立訂單失敗");
+          }
+          const data = await res.json();
+          showMessage(
+            `${side === "SELL" ? "掛賣" : "收購"}成功！訂單編號 #${data.id}`,
+            "success"
+          );
+
+          await loadOrderbook(selectedItem.id);
+          if (currentUser) await loadMyOrders();
+          updateTotal();
+        } catch (err) {
+          console.error("建立訂單錯誤：", err);
+          showMessage(err.message, "error");
+        }
+      }
+
+      buyButton.addEventListener("click", () => submitOrder("BUY"));
+      sellButton.addEventListener("click", () => submitOrder("SELL"));
+
+      // =======================
+      // 初始化
+      // =======================
+      const savedUser = localStorage.getItem("virtual_exchange_user");
+      if (savedUser) {
+        try {
+          currentUser = JSON.parse(savedUser);
+        } catch {
+          currentUser = null;
+        }
+      }
+      renderAuthUI();
+      loadItemTemplates();
+    </script>
+  </body>
+</html>
