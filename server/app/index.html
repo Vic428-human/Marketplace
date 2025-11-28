@@ -231,7 +231,30 @@
                   class="mt-0.5 font-semibold text-slate-100 truncate"
                 ></div>
               </div>
-
+              <!-- 新增餘額資訊 -->
+            <div class="border border-slate-800 rounded-xl p-2 bg-slate-900/60">
+              <div class="flex justify-between text-[11px] text-slate-400 mb-1">
+                <span>餘額</span>
+                <button
+                  id="topupButton"
+                  class="px-2 py-0.5 rounded-full bg-fuchsia-500/80 hover:bg-fuchsia-400 text-[11px] text-slate-50"
+                >
+                  儲值
+                </button>
+              </div>
+              <div class="flex justify-between text-[11px]">
+                <span class="text-slate-400">可用</span>
+                <span id="walletAvailable" class="text-emerald-300 font-semibold">0</span>
+              </div>
+              <div class="flex justify-between text-[11px]">
+                <span class="text-slate-400">凍結</span>
+                <span id="walletFrozen" class="text-amber-300 font-semibold">0</span>
+              </div>
+              <div class="flex justify-between text-[11px]">
+                <span class="text-slate-400">總額</span>
+                <span id="walletTotal" class="text-slate-100 font-semibold">0</span>
+              </div>
+            </div>
               <div>
                 <div class="flex items-center justify-between mb-1">
                   <span class="text-[11px] text-slate-400">我的掛單</span>
@@ -285,6 +308,10 @@
       // Discord inputs (在 form 裡)
       const discordIdInput = document.getElementById("discord_id");
       const discordNameInput = document.getElementById("discord_name");
+      const walletAvailable = document.getElementById("walletAvailable");
+      const walletFrozen = document.getElementById("walletFrozen");
+      const walletTotal = document.getElementById("walletTotal");
+      const topupButton = document.getElementById("topupButton");
 
       // =======================
       // Helper：訊息
@@ -339,6 +366,7 @@
           discordNameInput.value = currentUser.discord_name || "";
 
           loadMyOrders();
+          loadWallet(); 
         }
       }
 
@@ -684,6 +712,71 @@
       }
       renderAuthUI();
       loadItemTemplates();
+      async function loadWallet() {
+          if (!currentUser) return;
+
+          try {
+            const res = await fetch(
+              `${API_BASE}/api/wallet/${encodeURIComponent(currentUser.discord_id)}`,
+              { headers: NGROK_BYPASS_HEADER }
+            );
+            if (!res.ok) throw new Error(await res.text());
+            const data = await res.json();
+
+            const balance = Number(data.balance || 0);
+            const frozen = Number(data.frozen_balance || 0);
+            const available = balance - frozen;
+
+            walletAvailable.textContent = `${available.toLocaleString()} Z`;
+            walletFrozen.textContent = `${frozen.toLocaleString()} Z`;
+            walletTotal.textContent = `${balance.toLocaleString()} Z`;
+          } catch (err) {
+            console.error("載入錢包錯誤:", err);
+            walletAvailable.textContent = "—";
+            walletFrozen.textContent = "—";
+            walletTotal.textContent = "—";
+          }
+        }
+        topupButton.addEventListener("click", async () => {
+        if (!currentUser) {
+          showMessage("請先登入再儲值。", "error");
+          return;
+        }
+
+        const input = window.prompt("請輸入儲值金額（Z）：");
+        if (!input) return;
+
+        const amount = Number(input);
+        if (isNaN(amount) || amount <= 0) {
+          showMessage("儲值金額格式不正確。", "error");
+          return;
+        }
+
+        try {
+          const res = await fetch(`${API_BASE}/api/wallet/topup`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...NGROK_BYPASS_HEADER,
+            },
+            body: JSON.stringify({
+              discord_id: currentUser.discord_id,
+              amount,
+            }),
+          });
+          if (!res.ok) {
+            const txt = await res.text();
+            throw new Error(txt);
+          }
+          await res.json(); // 用不到內容也沒關係，主要是成功
+          showMessage(`儲值成功：${amount.toLocaleString()} Z`, "success");
+          loadWallet();
+        } catch (err) {
+          console.error("儲值錯誤：", err);
+          showMessage("儲值失敗，請稍後再試。", "error");
+        }
+      });
+
     </script>
   </body>
 </html>
