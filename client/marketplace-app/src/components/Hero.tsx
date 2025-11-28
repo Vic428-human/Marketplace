@@ -1,7 +1,8 @@
 import React, { useState, useRef } from "react";
+import SVGComponent from "./SVGComponent";
 
 export default function HeroSection() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = React.useState(false);
   const [isCopied, setIsCopied] = useState(false);
 
   const [isOpen, setIsOpen] = useState(false);
@@ -34,6 +35,14 @@ export default function HeroSection() {
   return (
     <>
       <section className="flex flex-col items-center bg-gradient-to-b from-black to-[#1A0033] text-white pb-16 text-sm overflow-hidden relative">
+        <div class="w-full py-2.5 font-medium text-sm text-white text-center bg-gradient-to-r from-[#4F39F6] to-[#FDFEFF]">
+          <p>
+            <span class="px-3 py-1 rounded-md text-indigo-600 bg-white mr-2">
+              官方公告:
+            </span>
+            預計 2025 年 12 月 31 日上線
+          </p>
+        </div>
         {/* 第一層 Nav */}
         <nav className="flex items-center justify-between p-4 md:px-16 lg:px-24 xl:px-32 md:py-6 w-full z-50">
           <a href="https://prebuiltui.com"></a>
@@ -45,66 +54,97 @@ export default function HeroSection() {
 
           {/* 手機模式會出現漢堡選單 */}
           <button
-            onClick={() => setIsMenuOpen(true)}
-            className="md:hidden bg-gray-900 hover:bg-gray-800 text-white p-2 rounded-md"
+            onClick={() => setMenuOpen(true)}
+            className="md:hidden active:scale-90 transition"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
+              width="26"
+              height="26"
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
+              className="lucide lucide-menu"
             >
-              <path d="M4 12h16M4 18h16M4 6h16" />
+              <path d="M4 5h16M4 12h16M4 19h16" />
             </svg>
           </button>
         </nav>
-        {/* 第二層 Nav */}
-        <nav className="flex items-center border mx-4 w-full max-w-4xl justify-between border-slate-700 px-4 py-2.5 rounded-full text-white">
-          <a href="https://prebuiltui.com">平台名稱logo 可以放 SVG</a>
-          {/* 中間路由選單 */}
-          <div
-            id="menu"
-            class="max-md:absolute max-md:bg-black/50 max-md:backdrop-blur max-md:top-0 transition-all duration-300 max-md:h-full max-md:w-full max-md:z-10 max-md:-left-full max-md:justify-center flex-col md:flex-row flex items-center gap-2"
+        {/* Mobile Menu */}
+        <div
+          className={`fixed inset-0 z-[100] bg-black/40 text-black backdrop-blur flex flex-col items-center justify-center text-lg gap-8 md:hidden transition-transform duration-300 ${
+            menuOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
+        >
+          <a href="/" className="text-white">
+            首頁
+          </a>
+          <a href="/marketplace" className="text-white">
+            市集
+          </a>
+          <button
+            onClick={() => setMenuOpen(false)}
+            className="active:ring-3 active:ring-white aspect-square size-10 p-1 items-center justify-center bg-indigo-600 hover:bg-indigo-700 transition text-white rounded-md flex"
           >
-            <a href="/" className="px-4 py-2">
-              首頁
-            </a>
+            X
+          </button>
+        </div>
+        {/* 第二層 Nav */}
+        <div className="flex items-center border mx-4 w-full max-w-4xl justify-between border-slate-700 px-4 py-2.5 rounded-full text-white">
+          <SVGComponent />
 
+          <div className="flex-1 flex justify-center">
             <div
-              className="relative"
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
+              id="menu"
+              className="max-md:absolute max-md:bg-black/50 max-md:backdrop-blur max-md:top-0 transition-all duration-300 max-md:h-full max-md:w-full max-md:z-10 max-md:-left-full max-md:justify-center flex-col md:flex-row flex items-center gap-2"
             >
-              <button className="flex items-center gap-1 hover:text-gray-300">
-                <span>市集</span>
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                  <path
-                    d="m4.5 7.2 3.793 3.793a1 1 0 0 0 1.414 0L13.5 7.2"
-                    stroke="white"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </button>
+              <div className="px-4 py-2">首頁</div>
 
-              {isOpen && (
-                <div className="absolute bg-slate-900 font-normal flex flex-col gap-2 w-max rounded-lg p-4 top-10 left-1/2 -translate-x-1/2">
-                  <a
-                    href="/marketplace"
-                    className="hover:translate-x-1 hover:text-slate-500 transition"
-                  >
-                    買賣刊登資訊
-                  </a>
+              <div
+                className="relative"
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
+              >
+                <div className="flex items-center gap-1 hover:text-gray-300">
+                  <span>市集</span>
+                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                    <path
+                      d="m4.5 7.2 3.793 3.793a1 1 0 0 0 1.414 0L13.5 7.2"
+                      stroke="white"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
                 </div>
-              )}
+
+                {isOpen && (
+                  <div className="absolute bg-slate-900 font-normal flex flex-col gap-2 w-max rounded-lg p-4 top-10 left-1/2 -translate-x-1/2">
+                    <a
+                      href="/marketplace"
+                      className="hover:translate-x-1 hover:text-slate-500 transition"
+                    >
+                      買賣刊登資訊
+                    </a>
+                  </div>
+                )}
+              </div>
+
+              <div className="px-4 py-2">測試1</div>
+
+              <div className="px-4 py-2">測試2</div>
+
+              <div className="px-4 py-2">測試3</div>
             </div>
           </div>
-          {/*  */}
-        </nav>
+          {/* 中間路由選單 */}
+          <button className="hidden md:block bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-full transition">
+            前往贊助
+          </button>
+          <button className="block md:hidden bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-full transition">
+            手機模式註冊!!
+          </button>
+        </div>
 
         {/* TODO: 預期放最新一筆玩家刊登的道具 */}
         <div className="flex flex-wrap items-center justify-center p-1.5 mt-32 rounded-full border border-indigo-900 text-xs">
@@ -119,11 +159,11 @@ export default function HeroSection() {
         </div>
 
         <h1 className="text-4xl md:text-6xl text-center font-medium max-w-3xl mt-5 bg-gradient-to-r from-white to-[#748298] text-transparent bg-clip-text">
-          全台首創娛樂性交易所
+          Mbao.com
         </h1>
 
         <p className="text-slate-100 md:text-base text-center max-w-xl mt-3 max-md:px-4">
-          熱門遊戲線上交易媒合平台
+          平均 47 秒就有人出價，你還在等什麼？
         </p>
 
         {/* Code Snippet */}
