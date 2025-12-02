@@ -90,7 +90,6 @@
           <a class="hover:text-white" href="AboutPage.html">世界觀與玩法</a>
         </nav>
         <div class="hidden sm:flex items-center gap-3 flex-none">
-          <button id="addExpBtn" class="hidden px-3 py-2 rounded-xl bg-slate-800 text-xs font-semibold border border-slate-700 hover:border-cyan-300/70 transition">+50 EXP</button>
           <div id="userMenuWrapper" class="relative hidden sm:block z-50 overflow-visible">
             <button
               id="userMenuButton"
@@ -275,7 +274,6 @@
           <div class="rounded-xl border border-slate-800 bg-slate-900/50 p-3 space-y-3">
             <div class="flex items-center justify-between">
               <div class="text-sm font-semibold">背包物品</div>
-              <button id="grantItemBtn" class="hidden px-2 py-1 text-[11px] rounded-lg bg-slate-800 border border-slate-700 hover:border-amber-300/70">測試發放</button>
             </div>
             <div id="inventoryList" class="space-y-2 max-h-40 overflow-y-auto text-xs text-slate-300 nice-scroll">
               <p class="text-slate-500">登入後可查看背包。</p>
@@ -306,8 +304,6 @@
       let dropdownTimer = null;
       const loginButton = document.getElementById("loginButton");
       const mobileMenuBtn = document.getElementById("mobileMenuBtn");
-      const addExpBtn = document.getElementById("addExpBtn");
-      const grantItemBtn = document.getElementById("grantItemBtn");
       const profileBadge = document.getElementById("profileBadge");
       const userMenuWrapper = document.getElementById("userMenuWrapper");
       const userMenuButton = document.getElementById("userMenuButton");
@@ -445,8 +441,7 @@
           profileBadge.className = "text-[11px] chip px-2 py-1 rounded-full text-slate-300";
           accountInfo.classList.add("hidden");
           accountInfoGuest.classList.remove("hidden");
-          addExpBtn.classList.add("hidden");
-          grantItemBtn.classList.add("hidden");
+          // 測試按鈕已移除
           drawerUserLabel.textContent = "訪客";
           drawerUserDesc.textContent = "請登入以查看帳戶資訊";
           closeUserDrawer();
@@ -470,8 +465,7 @@
             "text-[11px] chip px-2 py-1 rounded-full bg-cyan-500/20 text-cyan-200 border border-cyan-500/40";
           accountInfo.classList.remove("hidden");
           accountInfoGuest.classList.add("hidden");
-          addExpBtn.classList.remove("hidden");
-          grantItemBtn.classList.remove("hidden");
+          // 測試按鈕已移除
           drawerUserLabel.textContent = label || "USER";
           drawerUserDesc.textContent = currentUser.discord_id ? `ID #${currentUser.discord_id}` : "-";
         }
@@ -564,44 +558,7 @@
         if (e.key === "Escape") closeUserDrawer();
       });
 
-      addExpBtn.addEventListener
-      addExpBtn.addEventListener("click", async () => {
-        if (!currentUser) return;
-        try {
-          await fetchJSON("/api/users/add-exp", {
-            method: "POST",
-            body: { discord_id: currentUser.discord_id, delta: 50 },
-          });
-          await loadProfile();
-          showMessage("已登出");
-        } catch (err) {
-          showMessage(err.message, "error");
-        }
-      });
-
-      grantItemBtn.addEventListener("click", async () => {
-        if (!currentUser || !selectedItem) {
-          showMessage("已登出");
-          return;
-        }
-        const qty = Number(window.prompt("發放數量", "1"));
-        if (!qty || qty <= 0) return;
-        try {
-          await fetchJSON("/api/inventory/grant", {
-            method: "POST",
-            body: {
-              discord_id: currentUser.discord_id,
-              item_template_id: selectedItem.id,
-              qty,
-              note: "測試發放",
-            },
-          });
-          await loadInventory();
-          showMessage(`已發放 ${qty} 個 ${selectedItem.name}`);
-        } catch (err) {
-          showMessage(err.message, "error");
-        }
-      });
+      // 測試按鈕已移除
 
       function updateTotal() {
         const p = Number(priceInput.value);
@@ -727,14 +684,12 @@
       async function loadInventory() {
         if (!currentUser) return;
         try {
-          const data = await fetchJSON(
-            `/api/inventory/${encodeURIComponent(currentUser.discord_id)}`
-          );
+          const data = await fetchJSON(`/api/inventory/${encodeURIComponent(currentUser.discord_id)}`);
           if (!Array.isArray(data) || data.length === 0) {
-                            inventoryList.innerHTML = '<p class="text-slate-500">登入後可查看倉庫</p>';
+            inventoryList.innerHTML = '<p class="text-slate-500">目前背包沒有物品</p>';
             return;
           }
-                          inventoryList.innerHTML = '<p class="text-slate-500">登入後可查看倉庫</p>';
+          inventoryList.innerHTML = "";
           data.forEach((item) => {
             const div = document.createElement("div");
             div.className =
@@ -750,7 +705,7 @@
             inventoryList.appendChild(div);
           });
         } catch (err) {
-                          inventoryList.innerHTML = '<p class="text-slate-500">登入後可查看倉庫</p>';
+          inventoryList.innerHTML = '<p class="text-slate-500">載入失敗</p>';
         }
       }
 
