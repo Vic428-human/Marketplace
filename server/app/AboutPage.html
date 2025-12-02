@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RPG 冒險裝備交易平台 | 關於我們</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      :root {
+        --bg: #0b1020;
+        --card: #11172a;
+        --panel: #0f162a;
+        --accent: #c084fc;
+        --accent-2: #38bdf8;
+        --amber: #fbbf24;
+        --green: #34d399;
+        --red: #f87171;
+      }
+      body {
+        font-family: "Manrope", "Space Grotesk", system-ui, -apple-system, sans-serif;
+        background: radial-gradient(circle at 10% 20%, rgba(56, 189, 248, 0.12), transparent 26%),
+          radial-gradient(circle at 90% 10%, rgba(192, 132, 252, 0.14), transparent 25%),
+          radial-gradient(circle at 50% 90%, rgba(251, 191, 36, 0.12), transparent 30%),
+          linear-gradient(160deg, #090d1a 0%, #0c1224 40%, #0b1020 100%);
+        color: #e5e7eb;
+      }
+      .panel {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        box-shadow: 0 20px 70px rgba(0, 0, 0, 0.45);
+        backdrop-filter: blur(12px);
+      }
+      .card {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.015));
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(10px);
+      }
+      .glass {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        box-shadow: 0 20px 80px rgba(0, 0, 0, 0.45);
+        backdrop-filter: blur(14px);
+      }
+    </style>
+  </head>
+  <body class="min-h-screen">
+    <div class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+      <!-- Header -->
+      <header class="glass rounded-2xl px-5 py-4 flex items-center justify-between relative overflow-visible z-50">
+        <div class="flex items-center gap-3">
+          <a
+            href="index.html"
+            class="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-300 via-fuchsia-400 to-cyan-300 flex items-center justify-center text-slate-900 font-bold text-lg shadow-lg shadow-fuchsia-500/30"
+          >
+            VE
+          </a>
+          <div class="leading-tight">
+            <div class="text-xs uppercase tracking-[0.08em] text-slate-300">RPG 冒險裝備平台</div>
+            <div class="text-base md:text-lg font-semibold text-white">打怪 · 掉寶 · 自由交易</div>
+          </div>
+        </div>
+        <nav class="hidden md:flex items-center gap-6 text-sm text-slate-200">
+          <a href="index.html" class="text-gray-200 hover:text-cyan-200 transition font-medium">首頁</a>
+          <a href="#dungeon" class="text-gray-200 hover:text-cyan-200 transition font-medium">地城</a>
+          <a href="market.html" class="text-gray-200 hover:text-cyan-200 transition font-medium">裝備市場</a>
+          <a href="market.html#hot" class="text-gray-200 hover:text-cyan-200 transition font-medium">熱門裝備</a>
+          <a href="AboutPage.html" class="text-cyan-200 font-semibold">關於我們</a>
+        </nav>
+        <div class="relative flex-none z-50" id="userMenuWrapper">
+          <button
+            id="userMenuButton"
+            type="button"
+            class="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-fuchsia-400 to-cyan-300 text-slate-900 font-semibold shadow-[0_12px_40px_rgba(248,113,113,0.35)] hover:scale-[1.02] transition"
+          >
+            <span id="userMenuAvatar" class="hidden w-8 h-8 rounded-full bg-slate-800/80 border border-slate-600/60 flex items-center justify-center text-sm text-slate-300"></span>
+            <span id="userMenuLabel">登入</span>
+            <span id="userMenuArrow" class="hidden text-xs text-slate-500">▾</span>
+          </button>
+          <div
+            id="userDropdown"
+            class="hidden absolute right-0 mt-2 w-48 rounded-2xl border border-slate-800/80 bg-slate-900/95 shadow-2xl backdrop-blur-xl overflow-hidden z-50"
+          >
+            <a
+              id="personalCenterLink"
+              href="user_profiles.html"
+              class="block px-4 py-3 text-sm text-slate-100 hover:bg-slate-800/60"
+            >
+              個人中心
+            </a>
+            <button
+              id="logoutBtnDesktop"
+              class="w-full text-left px-4 py-3 text-sm text-rose-200 hover:bg-rose-500/10 border-t border-slate-800/60"
+            >
+              登出
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <div class="space-y-12">
+        <!-- Hero -->
+        <section
+          class="relative overflow-hidden panel rounded-3xl p-10 md:p-16 bg-gradient-to-r from-[#101733] via-[#0f162a] to-[#0c1224] border border-indigo-500/20"
+        >
+          <div class="absolute inset-0 pointer-events-none">
+            <div class="absolute -top-12 -left-10 w-80 h-80 bg-fuchsia-500/18 blur-[120px]"></div>
+            <div class="absolute -bottom-12 right-0 w-80 h-80 bg-cyan-400/20 blur-[120px]"></div>
+          </div>
+          <div class="relative text-center max-w-4xl mx-auto space-y-4">
+            <h1 class="text-3xl md:text-4xl font-semibold text-[#e1d7ff]">RPG 冒險裝備交易平台</h1>
+            <p class="text-[#d9dbff]">打怪、掉寶、鍛造、交易，串起一整個冒險世界的經濟循環</p>
+            <p class="text-gray-200 leading-relaxed">
+              這裡是結合 RPG 打怪、副本刷裝、角色養成與虛擬裝備市場的娛樂型平台。你可以在戰場上挑戰怪物、掉落稀有裝備，
+              也能像交易所一樣掛單、買賣裝備與素材，為自己的 Build 與策略打造最適合的一套裝備組合。
+              本平台所有行為皆為虛擬娛樂用途，不涉及任何真實金流。
+            </p>
+          </div>
+        </section>
+
+        <!-- Stats -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+          <div class="group card rounded-2xl p-6 text-center bg-gradient-to-br from-[#11172a] to-[#0f162a] transition-all duration-200 hover:-translate-y-1 hover:border-cyan-300/40 hover:shadow-[0_20px_60px_rgba(56,189,248,0.25)]">
+            <div class="text-2xl font-semibold text-[#e3e5ff] mb-1 group-hover:text-cyan-100">5,000+</div>
+            <div class="text-indigo-200/80 group-hover:text-cyan-200">已登錄裝備與道具</div>
+          </div>
+          <div class="group card rounded-2xl p-6 text-center bg-gradient-to-br from-[#11172a] to-[#0f162a] transition-all duration-200 hover:-translate-y-1 hover:border-cyan-300/40 hover:shadow-[0_20px_60px_rgba(56,189,248,0.25)]">
+            <div class="text-2xl font-semibold text-[#e3e5ff] mb-1 group-hover:text-cyan-100">1,200+</div>
+            <div class="text-indigo-200/80 group-hover:text-cyan-200">活躍冒險者</div>
+          </div>
+          <div class="group card rounded-2xl p-6 text-center bg-gradient-to-br from-[#11172a] to-[#0f162a] transition-all duration-200 hover:-translate-y-1 hover:border-cyan-300/40 hover:shadow-[0_20px_60px_rgba(56,189,248,0.25)]">
+            <div class="text-2xl font-semibold text-[#e3e5ff] mb-1 group-hover:text-cyan-100">95%</div>
+            <div class="text-indigo-200/80 group-hover:text-cyan-200">裝備再利用率</div>
+          </div>
+          <div class="group card rounded-2xl p-6 text-center bg-gradient-to-br from-[#11172a] to-[#0f162a] transition-all duration-200 hover:-translate-y-1 hover:border-cyan-300/40 hover:shadow-[0_20px_60px_rgba(56,189,248,0.25)]">
+            <div class="text-2xl font-semibold text-[#e3e5ff] mb-1 group-hover:text-cyan-100">24 / 7</div>
+            <div class="text-indigo-200/80 group-hover:text-cyan-200">副本 & 市場持續運轉</div>
+          </div>
+        </section>
+
+        <!-- Features -->
+        <section class="panel rounded-3xl p-8 md:p-10 bg-gradient-to-br from-[#0f1534] to-[#0c122d]">
+          <div class="text-center space-y-3 mb-10">
+            <h2 class="text-[#e5dcff] text-xl">核心特色</h2>
+            <p class="text-indigo-100/80">將 RPG 冒險體驗與玩家驅動的裝備市場結合在一起</p>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <!-- RPG 冒險與成長 -->
+            <div class="card rounded-2xl p-6 bg-gradient-to-br from-[#0d122b] to-[#0a0f24] hover:border-indigo-400/30 transition-all">
+              <div class="w-14 h-14 mb-4 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center shadow-[0_10px_30px_rgba(88,86,255,0.25)]">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
+                  <path d="M4 20h16M9 8l2 2 4-4" />
+                  <path d="M12 2 4 7v5c0 4 2.7 7.5 8 10 5.3-2.5 8-6 8-10V7l-8-5Z" />
+                </svg>
+              </div>
+              <div class="text-indigo-50 font-semibold mb-2">RPG 冒險與成長</div>
+              <p class="text-indigo-100/70 leading-relaxed">
+                透過打怪、副本與任務逐步提升角色能力，並用裝備與屬性 build 塑造出屬於你的戰鬥風格。
+              </p>
+            </div>
+
+            <!-- 掉落與鍛造系統 -->
+            <div class="card rounded-2xl p-6 bg-gradient-to-br from-[#0d122b] to-[#0a0f24] hover:border-indigo-400/30 transition-all">
+              <div class="w-14 h-14 mb-4 rounded-xl bg-gradient-to-br from-amber-300 via-fuchsia-400 to-cyan-300 flex items-center justify-center shadow-[0_10px_30px_rgba(248,113,113,0.28)]">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-slate-900" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
+                  <path d="M12 2 3 14h6l-1 8 7-10h-5z" />
+                </svg>
+              </div>
+              <div class="text-indigo-50 font-semibold mb-2">掉落與鍛造系統</div>
+              <p class="text-indigo-100/70 leading-relaxed">
+                普通到傳說級裝備、素材掉落，搭配鍛造與強化系統，讓每次戰利品都有被活用的可能。
+              </p>
+            </div>
+
+            <!-- 玩家驅動的裝備市場 -->
+            <div class="card rounded-2xl p-6 bg-gradient-to-br from-[#0d122b] to-[#0a0f24] hover:border-indigo-400/30 transition-all">
+              <div class="w-14 h-14 mb-4 rounded-xl bg-gradient-to-br from-sky-400 to-cyan-500 flex items-center justify-center shadow-[0_10px_30px_rgba(88,86,255,0.25)]">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
+                  <path d="M3 3v18h18" />
+                  <path d="M7 14 11 9l3 3 4-6" />
+                </svg>
+              </div>
+              <div class="text-indigo-50 font-semibold mb-2">玩家驅動的裝備市場</div>
+              <p class="text-indigo-100/70 leading-relaxed">
+                裝備與素材可自由掛單、買賣，價格由玩家行為決定，打造出真實感十足的遊戲內經濟系統。
+              </p>
+            </div>
+
+            <!-- 即時交易體驗 -->
+            <div class="card rounded-2xl p-6 bg-gradient-to-br from-[#0d122b] to-[#0a0f24] hover:border-indigo-400/30 transition-all">
+              <div class="w-14 h-14 mb-4 rounded-xl bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-[0_10px_30px_rgba(52,211,153,0.35)]">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-[#c7c4ff]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path d="M4 7h16M4 12h10M4 17h6" />
+                  <path d="M17 15l3 2-3 2" />
+                </svg>
+              </div>
+              <div class="text-indigo-50 font-semibold mb-2">即時掛單與撮合</div>
+              <p class="text-indigo-100/70 leading-relaxed">
+                使用模擬交易所撮合邏輯，讓你的買單與賣單能在娛樂情境下，以毫秒級速度完成匹配。
+              </p>
+            </div>
+
+            <!-- 娛樂為主，無真實金流 -->
+            <div class="card rounded-2xl p-6 bg-gradient-to-br from-[#0d122b] to-[#0a0f24] hover:border-indigo-400/30 transition-all">
+              <div class="w-14 h-14 mb-4 rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center shadow-[0_10px_30px_rgba(88,86,255,0.25)]">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
+                  <path d="M4 7h16v10H4z" />
+                  <path d="M9 7V5a3 3 0 0 1 6 0v2" />
+                </svg>
+              </div>
+              <div class="text-indigo-50 font-semibold mb-2">娛樂為主，無真實金流</div>
+              <p class="text-indigo-100/70 leading-relaxed">
+                所有裝備價值僅限遊戲內部使用，不連結現實金錢，使你能專心享受打怪與策略，不需承擔額外資金壓力。
+              </p>
+            </div>
+
+            <!-- 社群與活動 -->
+            <div class="card rounded-2xl p-6 bg-gradient-to-br from-[#0d122b] to-[#0a0f24] hover:border-indigo-400/30 transition-all">
+              <div class="w-14 h-14 mb-4 rounded-xl bg-gradient-to-br from-fuchsia-500 to-pink-500 flex items-center justify-center shadow-[0_10px_30px_rgba(88,86,255,0.25)]">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+              </div>
+              <div class="text-indigo-50 font-semibold mb-2">社群與活動</div>
+              <p class="text-indigo-100/70 leading-relaxed">
+                與其他冒險者交流 build、分享掉落戰利品，並參與未來規劃的季節活動與排行榜競賽。
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Reasons & Commitments -->
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- 左：為什麼選擇我們 -->
+          <div class="panel rounded-3xl p-8 bg-gradient-to-br from-[#0f1534] to-[#0c122d]">
+            <div class="flex items-center gap-3 mb-6">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-award w-6 h-6 text-indigo-400" aria-hidden="true">
+                <path d="m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526" />
+                <circle cx="12" cy="8" r="6" />
+              </svg>
+              <h3 class="text-indigo-200 font-semibold">為什麼這個世界值得你投入</h3>
+            </div>
+            <div class="space-y-4">
+              <div class="flex items-start gap-3">
+                <div class="w-8 h-8 mt-0.5 flex items-center justify-center rounded-full bg-gradient-to-br from-rose-400 to-purple-500 text-white border border-white/20 shadow-[0_6px_20px_rgba(233,106,223,0.35)]">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-4.5 h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="m9 12.5 2 2 4-5" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </div>
+                <div>
+                  <div class="text-indigo-50 font-medium">遊戲性與策略性兼具</div>
+                  <div class="text-indigo-100/70 text-sm">
+                    不只是打數字或單純刷裝，而是將裝備、屬性與市場價格設計進整體玩法中，讓每個決定都有重量。
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex items-start gap-3">
+                <div class="w-8 h-8 mt-0.5 flex items-center justify-center rounded-full bg-gradient-to-br from-rose-400 to-purple-500 text-white border border-white/20 shadow-[0_6px_20px_rgba(233,106,223,0.35)]">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-4.5 h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="m9 12.5 2 2 4-5" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </div>
+                <div>
+                  <div class="text-indigo-50 font-medium">低門檻、輕鬆上手</div>
+                  <div class="text-indigo-100/70 text-sm">
+                    新手也能從基礎裝備開始體驗打怪樂趣，再慢慢接觸市場與掛單，不需要任何金融背景。
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex items-start gap-3">
+                <div class="w-8 h-8 mt-0.5 flex items-center justify-center rounded-full bg-gradient-to-br from-rose-400 to-purple-500 text-white border border-white/20 shadow-[0_6px_20px_rgba(233,106,223,0.35)]">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-4.5 h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="m9 12.5 2 2 4-5" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </div>
+                <div>
+                  <div class="text-indigo-50 font-medium">紀錄完整、過程可追溯</div>
+                  <div class="text-indigo-100/70 text-sm">
+                    裝備來源、掉落怪物、副本、歷史交易紀錄完整留存，讓你清楚知道每件裝備的故事。
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex items-start gap-3">
+                <div class="w-8 h-8 mt-0.5 flex items-center justify-center rounded-full bg-gradient-to-br from-rose-400 to-purple-500 text-white border border-white/20 shadow-[0_6px_20px_rgba(233,106,223,0.35)]">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-4.5 h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="m9 12.5 2 2 4-5" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </div>
+                <div>
+                  <div class="text-indigo-50 font-medium">適合喜歡養成與 Build 的玩家</div>
+                  <div class="text-indigo-100/70 text-sm">
+                    如果你喜歡研究配點與裝備組合，這裡會是一個能持續玩、持續優化、持續測試新流派的空間。
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 右：服務承諾（改成 RPG / 虛擬交易版） -->
+          <div class="panel rounded-3xl p-8 bg-gradient-to-br from-[#0f1534] to-[#0c122d]">
+            <div class="flex items-center gap-3 mb-6">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-emerald-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
+                <path d="M12 8v4l3 3" />
+                <circle cx="12" cy="12" r="9" />
+              </svg>
+              <h3 class="text-emerald-200 font-semibold">服務承諾</h3>
+            </div>
+
+            <div class="space-y-3">
+              <!-- 虛擬交易模式 -->
+              <div
+                class="rounded-xl p-4 bg-gradient-to-r from-emerald-500/20 via-emerald-500/10 to-emerald-500/5
+                       border border-white/10 hover:border-emerald-300/80
+                       backdrop-blur-md shadow-md hover:shadow-xl hover:shadow-emerald-500/30
+                       group cursor-pointer transition-all duration-300 ease-out transform hover:scale-105 hover:-translate-y-0.5">
+                <div class="flex items-center gap-2 mb-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-emerald-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
+                    <path d="M12 3L4 7v6c0 5 4 8 8 8s8-3 8-8V7l-8-4z" />
+                    <path d="M9 12l2 2 4-4" />
+                  </svg>
+                  <div class="text-indigo-50 font-medium">虛擬交易模式</div>
+                </div>
+                <div class="text-indigo-100/70 text-sm">
+                  所有裝備交易僅存在於遊戲與平台內部，不連結真實金流或現金往來。
+                </div>
+                <div class="overflow-hidden max-h-0 group-hover:max-h-40 transition-all duration-300 text-indigo-100/60 text-sm mt-2">
+                  <p class="mt-1">你可以放心實驗各種交易策略，而不需擔心現實金錢風險。</p>
+                  <p class="mt-1">平台定位為娛樂與模擬，不提供任何投資建議或保證獲利。</p>
+                  <p class="mt-1 pb-2">專注在「好玩、好刷、好交易」的遊戲體驗本身。</p>
+                </div>
+              </div>
+
+              <!-- 即時掛單與撮合 -->
+              <div
+                class="rounded-xl p-4 bg-gradient-to-r from-cyan-500/20 via-cyan-500/10 to-cyan-500/5
+                       border border-white/10 hover:border-emerald-300/80
+                       backdrop-blur-md shadow-md hover:shadow-xl hover:shadow-emerald-500/30
+                       group cursor-pointer transition-all duration-300 ease-out transform hover:scale-105 hover:-translate-y-0.5">
+                <div class="flex items-center gap-2 mb-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-cyan-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
+                    <path d="M4 7h16M4 12h10M4 17h6" />
+                    <path d="M17 15l3 2-3 2" />
+                  </svg>
+                  <div class="text-indigo-50 font-medium">即時掛單與撮合</div>
+                </div>
+                <div class="text-indigo-100/70 text-sm">模擬交易所撮合邏輯，讓裝備買賣流暢自然。</div>
+                <div class="overflow-hidden max-h-0 group-hover:max-h-40 transition-all duration-300 text-indigo-100/60 text-sm mt-2">
+                  <p class="mt-1">系統即時處理掛單與吃單，讓你不必等待真人在線才有機會成交。</p>
+                  <p class="mt-1">異常價格與可疑行為會被自動偵測並標記，維護市場秩序。</p>
+                  <p class="mt-1 pb-2">適合用來測試「如果這是一個真實市場，我的策略會怎麼表現」。</p>
+                </div>
+              </div>
+
+              <!-- 公平掉落與規則 -->
+              <div
+                class="rounded-xl p-4 bg-gradient-to-r from-purple-500/20 via-purple-500/10 to-purple-500/5
+                       border border-white/10 hover:border-emerald-300/80
+                       backdrop-blur-md shadow-md hover:shadow-xl hover:shadow-emerald-500/30
+                       group cursor-pointer transition-all duration-300 ease-out transform hover:scale-105 hover:-translate-y-0.5">
+                <div class="flex items-center gap-2 mb-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-purple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
+                    <path d="M12 3l7 4v5c0 5-3.5 9-7 9s-7-4-7-9V7l7-4z" />
+                    <path d="M10 11l2 2 4-4" />
+                  </svg>
+                  <div class="text-indigo-50 font-medium">公平掉落與規則</div>
+                </div>
+                <div class="text-indigo-100/70 text-sm">固定規則與可預期的系統邏輯，是遊戲平衡的基礎。</div>
+                <div class="overflow-hidden max-h-0 group-hover:max-h-40 transition-all duration-300 text-indigo-100/60 text-sm mt-2">
+                  <p class="mt-1">怪物掉落、強化成功率與合成機制皆基於預設演算法運作。</p>
+                  <p class="mt-1">未來將逐步公開更多數值區間與機制說明，協助玩家做策略規劃。</p>
+                  <p class="mt-1 pb-2">不依賴外掛或隱藏加成，所有人都在相同規則下競爭。</p>
+                </div>
+              </div>
+
+              <!-- 隱私與遊戲數據保護 -->
+              <div
+                class="rounded-xl p-4 bg-gradient-to-r from-pink-500/20 via-pink-500/10 to-pink-500/5
+                       border border-white/10 hover:border-emerald-300/80
+                       backdrop-blur-md shadow-md hover:shadow-xl hover:shadow-emerald-500/30
+                       group cursor-pointer transition-all duration-300 ease-out transform hover:scale-105 hover:-translate-y-0.5">
+                <div class="flex items-center gap-2 mb-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-pink-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
+                    <path d="M12 12a4 4 0 100-8 4 4 0 000 8z" />
+                    <path d="M4 20c1.5-3.5 4.5-5.5 8-5.5s6.5 2 8 5.5" />
+                  </svg>
+                  <div class="text-indigo-50 font-medium">隱私與遊戲數據保護</div>
+                </div>
+                <div class="text-indigo-100/70 text-sm">尊重玩家隱私，只保留必要的遊戲與帳號資訊。</div>
+                <div class="overflow-hidden max-h-0 group-hover:max-h-40 transition-all duration-300 text-indigo-100/60 text-sm mt-2">
+                  <p class="mt-1">不販售、不外流玩家資料，並以權限控管與加密技術進行保護。</p>
+                  <p class="mt-1">遊戲與交易紀錄在合適的時間範圍內保存，方便你回顧自己的成長軌跡。</p>
+                  <p class="mt-1 pb-2">目標是讓你放心把角色當作一個長期經營的冒險帳號。</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Timeline -->
+        <section class="panel rounded-3xl p-8 md:p-10 bg-gradient-to-br from-[#0f1534] to-[#0c122d]">
+          <div class="text-center mb-10">
+            <h3 class="text-[#e5dcff] text-xl mb-2">世界更新計畫</h3>
+            <div class="mx-auto w-24 h-0.5 bg-gradient-to-r from-pink-400 via-indigo-400 to-cyan-400 rounded-full"></div>
+          </div>
+          <div class="relative max-w-4xl mx-auto">
+            <div class="hidden md:block absolute left-1/2 top-0 bottom-0 w-1 bg-gradient-to-b from-pink-400 via-indigo-400 to-cyan-400 transform -translate-x-1/2 rounded-full"></div>
+            <div class="space-y-8">
+              <!-- Q1 -->
+              <div class="flex items-center gap-6 md:gap-10 md:flex-row">
+                <div class="flex-1 md:text-right">
+                  <div class="card bg白/5 border border-white/10 rounded-2xl p-5 backdrop-blur-md transition-all duration-200 hover:-translate-y-1 hover:border-cyan-300/50 hover:shadow-[0_16px_50px_rgba(88,86,255,0.25)]">
+                    <div class="text-indigo-200 mb-1">2026 Q1</div>
+                    <div class="text-indigo-50 font-semibold mb-1">核心冒險系統上線</div>
+                    <div class="text-indigo-100/70 text-sm">完成基本副本、怪物與裝備掉落流程，開啟封測階段。</div>
+                  </div>
+                </div>
+                <div class="hidden md:flex w-4 h-4 rounded-full bg-gradient-to-br from-pink-400 to-indigo-400 border-4 border-[#0f1534] shadow-[0_0_20px_rgba(88,86,255,0.7)]"></div>
+                <div class="flex-1 hidden md:block"></div>
+              </div>
+
+              <!-- Q2 -->
+              <div class="flex items-center gap-6 md:gap-10 md:flex-row-reverse">
+                <div class="flex-1 md:text-left">
+                  <div class="card bg白/5 border border白/10 rounded-2xl p-5 backdrop-blur-md transition-all duration-200 hover:-translate-y-1 hover:border-cyan-300/50 hover:shadow-[0_16px_50px_rgba(88,86,255,0.25)]">
+                    <div class="text-indigo-200 mb-1">2026 Q2</div>
+                    <div class="text-indigo-50 font-semibold mb-1">裝備市場全面啟用</div>
+                    <div class="text-indigo-100/70 text-sm">開放掛單、吃單、排行榜與熱門裝備展示。</div>
+                  </div>
+                </div>
+                <div class="hidden md:flex w-4 h-4 rounded-full bg-gradient-to-br from-pink-400 to-indigo-400 border-4 border-[#0f1534] shadow-[0_0_20px_rgba(88,86,255,0.7)]"></div>
+                <div class="flex-1 hidden md:block"></div>
+              </div>
+
+              <!-- Q3 -->
+              <div class="flex items-center gap-6 md:gap-10 md:flex-row">
+                <div class="flex-1 md:text-right">
+                  <div class="card bg白/5 border border白/10 rounded-2xl p-5 backdrop-blur-md transition-all duration-200 hover:-translate-y-1 hover:border-cyan-300/50 hover:shadow-[0_16px_50px_rgba(88,86,255,0.25)]">
+                    <div class="text-indigo-200 mb-1">2026 Q3</div>
+                    <div class="text-indigo-50 font-semibold mb-1">公會與社群系統</div>
+                    <div class="text-indigo-100/70 text-sm">引入公會、副本協作、共享倉庫與公會專屬任務。</div>
+                  </div>
+                </div>
+                <div class="hidden md:flex w-4 h-4 rounded-full bg-gradient-to-br from-pink-400 to-indigo-400 border-4 border-[#0f1534] shadow-[0_0_20px_rgba(88,86,255,0.7)]"></div>
+                <div class="flex-1 hidden md:block"></div>
+              </div>
+
+              <!-- Q4 -->
+              <div class="flex items-center gap-6 md:gap-10 md:flex-row-reverse">
+                <div class="flex-1 md:text-left">
+                  <div class="card bg白/5 border border白/10 rounded-2xl p-5 backdrop-blur-md transition-all duration-200 hover:-translate-y-1 hover:border-cyan-300/50 hover:shadow-[0_16px_50px_rgba(88,86,255,0.25)]">
+                    <div class="text-indigo-200 mb-1">2026 Q4</div>
+                    <div class="text-indigo-50 font-semibold mb-1">季節活動與進階玩法</div>
+                    <div class="text-indigo-100/70 text-sm">推出季節制活動、限時副本與更多裝備詞綴與 build 深度。</div>
+                  </div>
+                </div>
+                <div class="hidden md:flex w-4 h-4 rounded-full bg-gradient-to-br from-pink-400 to-indigo-400 border-4 border-[#0f1534] shadow-[0_0_20px_rgba(88,86,255,0.7)]"></div>
+                <div class="flex-1 hidden md:block"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- CTA -->
+        <section
+          class="relative overflow-hidden panel rounded-3xl p-8 md:p-10 text-center bg-gradient-to-r from-[#0f162a]/95 via-[#101a48]/80 to-[#0c1224]/95 border border-indigo-500/20 shadow-[0_18px_70px_rgba(88,86,255,0.2)]"
+        >
+          <div class="absolute inset-0 pointer-events-none">
+            <div class="absolute -left-12 top-0 w-72 h-72 bg-fuchsia-500/22 blur-[120px]"></div>
+            <div class="absolute right-0 -bottom-12 w-72 h-72 bg-cyan-400/22 blur-[120px]"></div>
+          </div>
+          <div class="relative space-y-4">
+            <h4 class="text-pink-200 text-lg">加入冒險者行列</h4>
+            <p class="text-indigo-100/80">
+              從第一隻怪物、第一件裝備、第一筆掛單開始，在這個世界寫下屬於你的冒險故事。
+            </p>
+            <div class="flex flex-wrap justify-center gap-4 pt-2">
+              <a
+                href="market.html"
+                class="px-8 py-3 rounded-lg bg-gradient-to-r from-fuchsia-400 to-cyan-300 text-slate-900 font-semibold shadow-[0_12px_40px_rgba(248,113,113,0.35)] hover:scale-[1.02] transition-all"
+              >
+                立即前往裝備市場
+              </a>
+              <a
+                href="index.html"
+                class="px-8 py-3 rounded-lg bg-white/5 border border-indigo-400/30 text-indigo-50 hover:bg白/10 transition-all"
+              >
+                回到首頁開始冒險
+              </a>
+              <a
+                href="#"
+                class="px-8 py-3 rounded-lg bg白/5 border border-indigo-400/30 text-indigo-50 hover:bg白/10 transition-all"
+              >
+                加入玩家 Discord
+              </a>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <script>
+      const userMenuWrapper = document.getElementById('userMenuWrapper');
+      const userMenuButton = document.getElementById('userMenuButton');
+      const userMenuLabel = document.getElementById('userMenuLabel');
+      const userMenuAvatar = document.getElementById('userMenuAvatar');
+      const userMenuArrow = document.getElementById('userMenuArrow');
+      const userDropdown = document.getElementById('userDropdown');
+      const personalCenterLink = document.getElementById('personalCenterLink');
+      const logoutBtnDesktop = document.getElementById('logoutBtnDesktop');
+
+      let cachedUser = null;
+      let dropdownHideTimer = null;
+
+      const guestButtonClass =
+        'flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-fuchsia-400 to-cyan-300 text-slate-900 font-semibold shadow-[0_12px_40px_rgba(248,113,113,0.35)] hover:scale-[1.02] transition';
+      const userButtonClass =
+        'group flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-slate-900/80 border border-slate-600 text-slate-100 font-semibold shadow-lg hover:border-cyan-300/60 transition';
+
+      function applyUserState() {
+        cachedUser = null;
+        try {
+          const raw = localStorage.getItem('virtual_exchange_user');
+          if (raw) cachedUser = JSON.parse(raw);
+        } catch {}
+        if (!cachedUser) {
+          clearUserState();
+          return;
+        }
+        const name = cachedUser.discord_name || cachedUser.email || cachedUser.discord_id || '用戶';
+        if (userMenuLabel) userMenuLabel.textContent = name;
+        if (userMenuAvatar) {
+          userMenuAvatar.textContent = name.trim().charAt(0) || '用';
+          userMenuAvatar.classList.remove('hidden');
+        }
+        if (userMenuButton) userMenuButton.className = userButtonClass;
+        if (userMenuArrow) userMenuArrow.classList.remove('hidden');
+        if (personalCenterLink) personalCenterLink.classList.remove('hidden');
+        hideUserDropdown();
+      }
+
+      function clearUserState() {
+        cachedUser = null;
+        if (userMenuLabel) userMenuLabel.textContent = '登入';
+        if (userMenuAvatar) {
+          userMenuAvatar.textContent = '';
+          userMenuAvatar.classList.add('hidden');
+        }
+        if (userMenuArrow) userMenuArrow.classList.add('hidden');
+        if (userMenuButton) userMenuButton.className = guestButtonClass;
+        if (personalCenterLink) personalCenterLink.classList.add('hidden');
+        hideUserDropdown(true);
+      }
+
+      function logoutUser() {
+        localStorage.removeItem('virtual_exchange_user');
+        clearUserState();
+        window.location.href = 'index.html';
+      }
+
+      function showUserDropdown() {
+        if (!cachedUser || !userDropdown) return;
+        userDropdown.classList.remove('hidden');
+      }
+
+      function toggleDropdown() {
+        if (!cachedUser || !userDropdown) return;
+        const isHidden = userDropdown.classList.contains('hidden');
+        if (isHidden) {
+          userDropdown.classList.remove('hidden');
+        } else {
+          userDropdown.classList.add('hidden');
+        }
+      }
+
+      function hideUserDropdown(force) {
+        if (!userDropdown) return;
+        if (dropdownHideTimer) {
+          clearTimeout(dropdownHideTimer);
+          dropdownHideTimer = null;
+        }
+        if (force || !cachedUser) {
+          userDropdown.classList.add('hidden');
+        }
+      }
+
+      if (userMenuButton) {
+        userMenuButton.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (!cachedUser) {
+            window.location.href = 'login.html';
+            return;
+          }
+          toggleDropdown();
+        });
+      }
+
+      if (userMenuWrapper) {
+        userMenuWrapper.addEventListener('mouseenter', () => {
+          if (dropdownHideTimer) {
+            clearTimeout(dropdownHideTimer);
+            dropdownHideTimer = null;
+          }
+          showUserDropdown();
+        });
+        userMenuWrapper.addEventListener('mouseleave', () => {
+          dropdownHideTimer = setTimeout(() => hideUserDropdown(true), 180);
+        });
+      }
+
+      if (logoutBtnDesktop) {
+        logoutBtnDesktop.addEventListener('click', () => logoutUser());
+      }
+
+      document.addEventListener('click', (e) => {
+        if (!userMenuWrapper) return;
+        if (!userMenuWrapper.contains(e.target)) {
+          hideUserDropdown(true);
+        }
+      });
+
+      applyUserState();
+    </script>
+  </body>
+</html>

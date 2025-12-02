@@ -1,0 +1,1348 @@
+﻿<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>裝備市場 | Market</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      :root {
+        --bg: #0b1020;
+        --panel: #0f162a;
+        --card: #11172a;
+        --accent: #c084fc;
+        --accent-2: #38bdf8;
+        --amber: #fbbf24;
+        --green: #34d399;
+        --red: #f87171;
+      }
+      body {
+        font-family: "Manrope", "Space Grotesk", system-ui, -apple-system, sans-serif;
+        background: radial-gradient(circle at 10% 20%, rgba(56, 189, 248, 0.12), transparent 26%),
+          radial-gradient(circle at 90% 10%, rgba(192, 132, 252, 0.14), transparent 25%),
+          radial-gradient(circle at 50% 90%, rgba(251, 191, 36, 0.12), transparent 30%),
+          linear-gradient(160deg, #090d1a 0%, #0c1224 40%, #0b1020 100%);
+        color: #e5e7eb;
+      }
+      .nice-scroll {
+        scrollbar-width: thin;
+        scrollbar-color: #475569 #0f172a;
+      }
+      .nice-scroll::-webkit-scrollbar {
+        width: 6px;
+      }
+      .nice-scroll::-webkit-scrollbar-track {
+        background: #0f172a;
+      }
+      .nice-scroll::-webkit-scrollbar-thumb {
+        background: linear-gradient(180deg, #38bdf8, #a855f7);
+        border-radius: 999px;
+      }
+      .glass {
+        background: linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+        border: 1px solid rgba(255,255,255,0.06);
+        box-shadow: 0 20px 80px rgba(0, 0, 0, 0.45);
+        backdrop-filter: blur(14px);
+      }
+      .title-accent {
+        letter-spacing: 0.08em;
+      }
+      .chip {
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      #klineChart { min-height: 280px; position: relative; }
+      #klineStatus { position: absolute; top: 8px; right: 12px; z-index: 10; }
+      .drawer-overlay { transition: opacity 0.25s ease, visibility 0.25s ease; }
+      .drawer-panel { transition: transform 0.28s ease; }
+      body.drawer-open { overflow: hidden; }
+      body.drawer-open #userDrawerOverlay { opacity: 1; visibility: visible; pointer-events: auto; }
+      body.drawer-open #userDrawer { transform: translateX(0); }
+      @media (max-width: 1024px) {
+        header .title-block { width: 100%; }
+        #klineChart { min-height: 240px; }
+      }
+      @media (max-width: 640px) {
+        body { padding-bottom: 16px; }
+        .content-grid { grid-template-columns: 1fr !important; gap: 14px; }
+        header .action-row { width: 100%; justify-content: flex-end; }
+      }
+    </style>
+    <script src="./lightweight-charts.standalone.production.js"></script>
+  </head>
+  <body class="min-h-screen">
+    <div class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+      <header class="glass rounded-2xl px-5 py-4 flex items-center justify-between gap-4 relative overflow-visible z-50">
+        <div class="flex items-center gap-3 flex-none">
+          <a href="index.html" class="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-300 via-fuchsia-400 to-cyan-300 flex items-center justify-center text-slate-900 font-bold text-lg shadow-lg shadow-fuchsia-500/30">VE</a>
+          <div>
+            <div class="text-xs uppercase tracking-[0.08em] text-slate-300">RPG 裝備交易平台</div>
+            <div class="text-base font-semibold tracking-tight text-white">打怪・掉寶・自由交易</div>
+          </div>
+        </div>
+        <nav class="hidden md:flex flex-1 items-center justify-center gap-8 text-sm text-slate-200">
+          <a class="hover:text-white" href="index.html">首頁</a>
+          <a class="hover:text-white" href="#dungeon">地城</a>
+          <a class="text-cyan-200 font-semibold" href="market.html">裝備市場</a>
+          <a class="hover:text-white" href="AboutPage.html">世界觀與玩法</a>
+        </nav>
+        <div class="hidden sm:flex items-center gap-3 flex-none">
+          <button id="addExpBtn" class="hidden px-3 py-2 rounded-xl bg-slate-800 text-xs font-semibold border border-slate-700 hover:border-cyan-300/70 transition">+50 EXP</button>
+          <div id="userMenuWrapper" class="relative hidden sm:block z-50 overflow-visible">
+            <button
+              id="userMenuButton"
+              class="group flex items-center gap-3 px-4 py-2 rounded-2xl bg-slate-900/70 border border-slate-700/70 text-slate-100 font-semibold shadow-lg hover:border-cyan-300/60 transition focus:outline-none focus:ring-1 focus:ring-cyan-300/60"
+            >
+              <span id="userMenuAvatar" class="w-8 h-8 rounded-full bg-slate-800/80 border border-slate-600/60 flex items-center justify-center text-sm text-slate-300 hidden">◎</span>
+              <span id="userMenuLabel">登入</span>
+              <span id="userMenuArrow" class="text-xs text-slate-500 group-hover:text-cyan-200">▾</span>
+            </button>
+            <div
+              id="userDropdown"
+              class="hidden absolute right-0 mt-2 w-48 rounded-2xl border border-slate-800/80 bg-slate-900/95 shadow-2xl backdrop-blur-xl overflow-hidden z-50"
+            >
+              <a
+                id="personalCenterLink"
+                href="user_profiles.html"
+                class="block px-4 py-3 text-sm text-slate-100 hover:bg-slate-800/60"
+              >
+                個人中心
+              </a>
+              <button
+                id="logoutBtnDesktop"
+                class="w-full text-left px-4 py-3 text-sm text-rose-200 hover:bg-rose-500/10 border-t border-slate-800/60"
+              >
+                登出
+              </button>
+            </div>
+          </div>
+          <button id="loginButton" class="sm:hidden px-4 py-2 rounded-xl bg-gradient-to-r from-fuchsia-400 to-cyan-300 text-slate-900 font-semibold shadow-lg shadow-fuchsia-500/30 hover:scale-[1.02] transition">??</button>
+        </div>
+        <button id="mobileMenuBtn" class="md:hidden px-3 py-2 rounded-xl bg-slate-800 text-slate-200 border border-slate-700 hover:border-cyan-300/70 transition flex-none" aria-label="????">
+          <span class="block w-5 h-0.5 bg-slate-200 mb-1"></span>
+          <span class="block w-5 h-0.5 bg-slate-200 mb-1"></span>
+          <span class="block w-5 h-0.5 bg-slate-200"></span>
+        </button>
+      </header>
+
+      <div id="userDrawerOverlay" class="drawer-overlay fixed inset-0 bg-black/50 opacity-0 invisible pointer-events-none z-40"></div>
+      <aside id="userDrawer" class="drawer-panel fixed top-0 right-0 h-full w-full max-w-sm bg-slate-950/95 border-l border-slate-800 shadow-2xl translate-x-full z-50 flex flex-col">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-slate-800">
+          <div>
+            <div id="drawerUserLabel" class="text-lg font-semibold text-white truncate">USER</div>
+          </div>
+          <button id="drawerCloseBtn" class="text-slate-400 hover:text-white text-xl leading-none">&times;</button>
+        </div>
+        <div class="p-5 space-y-4">
+          <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-3 text-sm text-slate-200">
+            <div class="text-xs text-slate-400 mb-1">玩家</div>
+            <div id="drawerUserDesc" class="font-semibold">-</div>
+          </div>
+          <a class="block text-slate-100 hover:text-white" href="user_profiles.html">個人中心</a>
+          <a class="block text-slate-100 hover:text-white" href="index.html">首頁</a>
+          <a class="block text-slate-100 hover:text-white" href="#dungeon">地城</a>
+          <a class="block text-slate-100 hover:text-white" href="market.html">裝備市場</a>
+          <a class="block text-slate-100 hover:text-white" href="#about">世界觀與玩法</a>
+          <button id="logoutButton" class="w-full py-3 rounded-xl bg-gradient-to-r from-rose-500 to-amber-400 text-slate-900 font-bold shadow-lg shadow-rose-500/30 hover:scale-[1.01] transition">登出</button>
+        </div>
+      </aside>
+
+      <div id="message" class="hidden glass rounded-xl px-4 py-3 text-sm"></div>
+
+      <main class="grid gap-5 lg:grid-cols-3 content-grid">
+        <section class="glass rounded-2xl p-4 lg:col-span-2 space-y-4 relative">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="text-xs text-slate-400">Marketplace</div>
+              <button id="itemDropdownBtn" class="min-w-[220px] rounded-xl bg-slate-900/60 border border-slate-700/70 px-3 py-2 text-left text-sm focus:outline-none focus:ring-1 focus:ring-cyan-300/70 flex items-center justify-between">
+                <span id="itemDropdownLabel" class="truncate">選擇道具</span>
+                <span class="text-[11px] text-slate-500">▼</span>
+              </button>
+            </div>
+            <div class="text-right">
+              <div class="text-xs text-slate-400">參考價格（示意）</div>
+              <div id="selectedItemPrice" class="text-lg font-semibold text-amber-300">—</div>
+            </div>
+          </div>
+          <div id="itemDropdownPanel" class="hidden absolute left-4 right-4 top-16 z-20 rounded-2xl border border-slate-800 bg-slate-900/95 shadow-2xl p-3 space-y-2">
+            <input id="itemSearchInput" type="text" placeholder="搜尋道具名稱" class="w-full rounded-lg bg-slate-900/70 border border-slate-700/70 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-cyan-300/70" />
+            <div id="itemListPanel" class="max-h-80 overflow-y-auto space-y-1 nice-scroll"></div>
+          </div>
+          <div class="text-xs text-slate-400">選擇中的道具</div>
+          <div id="selectedItemName" class="text-xl font-semibold">尚未選擇</div>
+
+          <div class="grid lg:grid-cols-3 gap-4">
+            <div class="rounded-2xl border border-slate-800 bg-slate-900/50 p-4 relative lg:col-span-2">
+              <div class="flex items-center justify-between mb-2">
+                <div class="text-sm font-semibold text-slate-100">價格 K 線</div>
+                <div id="klineStatus" class="text-[11px] text-slate-500 absolute right-4 top-4">--</div>
+              </div>
+              <div class="flex items-center gap-2 mb-3 text-[11px]">
+                <span id="high24Label" class="px-2 py-1 rounded-full border border-emerald-400/40 bg-emerald-500/10 text-emerald-200">24H High: --</span>
+                <span id="low24Label" class="px-2 py-1 rounded-full border border-rose-400/40 bg-rose-500/10 text-rose-200">24H Low: --</span>
+                <span id="change24Label" class="px-2 py-1 rounded-full border border-cyan-400/40 bg-cyan-500/10 text-cyan-200">24H Change: --</span>
+              </div>
+              <div id="klineChart" class="h-64 w-full"></div>
+            </div>
+
+            <div class="rounded-2xl border border-slate-800 bg-slate-900/50 p-4">
+              <div class="flex items-center justify-between mb-3">
+                <div class="text-sm font-semibold text-slate-100">訂單簿</div>
+                <div class="text-[11px] text-slate-400">價格 | 數量 | 累計</div>
+              </div>
+              <div id="asksStack" class="space-y-1 mb-3 max-h-48 overflow-y-auto nice-scroll"></div>
+              <div class="text-center my-2">
+                <div id="midPriceLabel" class="text-lg font-semibold text-amber-300">—</div>
+                <div id="midSubLabel" class="text-[11px] text-slate-400">參考價</div>
+              </div>
+              <div id="bidsStack" class="space-y-1 mt-3 max-h-48 overflow-y-auto nice-scroll"></div>
+              <div class="mt-4">
+                <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1">
+                  <span id="buyPctLabel">買盤 —%</span>
+                  <span id="sellPctLabel">賣盤 —%</span>
+                </div>
+                <div class="h-2 rounded-full overflow-hidden bg-slate-800 border border-slate-700 relative">
+                  <div id="buyPctBar" class="h-full bg-emerald-500 absolute left-0 top-0" style="width:50%"></div>
+                  <div id="sellPctBar" class="h-full bg-rose-500 absolute right-0 top-0" style="width:50%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="glass rounded-2xl p-4 lg:col-span-1 space-y-4">
+          <div class="rounded-xl border border-slate-800 bg-slate-900/50 p-3 space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="text-sm font-semibold">快速下單</div>
+              <div class="text-[11px] text-slate-400">模擬金流</div>
+            </div>
+            <div class="space-y-2 text-sm">
+              <label class="block text-slate-300 text-xs">價格 (Zeny)</label>
+              <input id="price" type="number" min="0" step="1" class="w-full rounded-lg bg-slate-900/70 border border-slate-700 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-cyan-300/70" />
+              <label class="block text-slate-300 text-xs">數量</label>
+              <input id="qty" type="number" min="1" step="1" value="1" class="w-full rounded-lg bg-slate-900/70 border border-slate-700 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-cyan-300/70" />
+              <div class="flex items-center justify-between text-xs bg-slate-800/60 rounded-lg px-3 py-2">
+                <span class="text-slate-400">總價</span>
+                <span id="totalPrice" class="font-semibold text-amber-300">—</span>
+              </div>
+              <div class="grid grid-cols-2 gap-2 pt-1">
+                <button id="buyButton" class="py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 font-semibold text-slate-900 transition">買入</button>
+                <button id="sellButton" class="py-2 rounded-lg bg-rose-500 hover:bg-rose-400 font-semibold text-slate-50 transition">賣出</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-slate-800 bg-slate-900/50 p-3 space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="text-sm font-semibold">玩家概況</div>
+              <div class="text-[11px] chip px-2 py-1 rounded-full text-slate-300" id="profileBadge">未登入</div>
+            </div>
+            <div id="accountInfoGuest" class="text-xs text-slate-400">登入後可查詢等級、餘額與掛單</div>
+            <div id="accountInfo" class="hidden space-y-3 text-sm">
+              <div>
+                <div class="text-xs text-slate-400">玩家</div>
+                <div id="accountUserLabel" class="font-semibold"></div>
+              </div>
+              <div>
+                <div class="flex items-center justify-between text-xs text-slate-400">
+                  <span>等級</span>
+                  <span id="levelLabel" class="font-semibold text-cyan-200"></span>
+                </div>
+                <div class="w全 h-2.5 rounded-full bg-slate-800 overflow-hidden">
+                  <div id="expBar" class="h-full bg-gradient-to-r from-cyan-400 to-amber-300" style="width: 0%"></div>
+                </div>
+                <div class="text-[11px] text-slate-400 mt-1">EXP <span id="expLabel"></span> / 100</div>
+              </div>
+              <div class="border border-slate-800 rounded-lg p-2 bg-slate-900/60">
+                <div class="flex justify-between text-[11px] text-slate-400 mb-1">
+                  <span>錢包</span>
+                  <button id="topupButton" class="px-2 py-0.5 rounded-full bg-cyan-500/80 text-slate-900 text-[11px] font-semibold hover:bg-cyan-400">儲值</button>
+                </div>
+                <div class="flex justify-between text-xs"><span class="text-slate-400">可用</span><span id="walletAvailable" class="font-semibold text-emerald-300">0</span></div>
+                <div class="flex justify-between text-xs"><span class="text-slate-400">凍結</span><span id="walletFrozen" class="font-semibold text-amber-300">0</span></div>
+                <div class="flex justify-between text-xs"><span class="text-slate-400">總額</span><span id="walletTotal" class="font-semibold text-slate-100">0</span></div>
+              </div>
+              <div>
+                <div class="flex items-center justify-between text-xs text-slate-400 mb-1"><span>我的掛單</span></div>
+                <div id="myOrders" class="space-y-1 max-h-28 overflow-y-auto text-xs nice-scroll"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-slate-800 bg-slate-900/50 p-3 space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="text-sm font-semibold">背包物品</div>
+              <button id="grantItemBtn" class="hidden px-2 py-1 text-[11px] rounded-lg bg-slate-800 border border-slate-700 hover:border-amber-300/70">測試發放</button>
+            </div>
+            <div id="inventoryList" class="space-y-2 max-h-40 overflow-y-auto text-xs text-slate-300 nice-scroll">
+              <p class="text-slate-500">登入後可查看背包。</p>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+    <script>
+      // 後端 API 基底：已替換為你的 ngrok URL
+      const API_BASE = "https://tapes-june-addresses-mount.trycloudflare.com";
+      const NGROK_BYPASS_HEADER = { "ngrok-skip-browser-warning": "true" };
+      const LEVEL_UP_EXP = 100;
+
+      let currentUser = null;
+      let profile = null;
+      let allItems = [];
+      let selectedItem = null;
+      let chart = null;
+      let candleSeries = null;
+      let chartLibPromise = null;
+      let lineFallback = false;
+      let lastTradePrice = null;
+      let priceLockedByUser = false;
+
+      const messageBox = document.getElementById("message");
+      let toastTimer = null;
+      let dropdownTimer = null;
+      const loginButton = document.getElementById("loginButton");
+      const mobileMenuBtn = document.getElementById("mobileMenuBtn");
+      const addExpBtn = document.getElementById("addExpBtn");
+      const grantItemBtn = document.getElementById("grantItemBtn");
+      const profileBadge = document.getElementById("profileBadge");
+      const userMenuWrapper = document.getElementById("userMenuWrapper");
+      const userMenuButton = document.getElementById("userMenuButton");
+      const userMenuLabel = document.getElementById("userMenuLabel");
+      const userMenuAvatar = document.getElementById("userMenuAvatar");
+      const userDropdown = document.getElementById("userDropdown");
+      const personalCenterLink = document.getElementById("personalCenterLink");
+      const logoutBtnDesktop = document.getElementById("logoutBtnDesktop");
+
+      const itemDropdownBtn = document.getElementById("itemDropdownBtn");
+      const itemDropdownLabel = document.getElementById("itemDropdownLabel");
+      const itemDropdownPanel = document.getElementById("itemDropdownPanel");
+      const itemSearchInput = document.getElementById("itemSearchInput");
+      const itemListPanel = document.getElementById("itemListPanel");
+      const selectedItemName = document.getElementById("selectedItemName");
+      const selectedItemPrice = document.getElementById("selectedItemPrice");
+      const asksStack = document.getElementById("asksStack");
+      const bidsStack = document.getElementById("bidsStack");
+      const midPriceLabel = document.getElementById("midPriceLabel");
+      const midSubLabel = document.getElementById("midSubLabel");
+      const buyPctLabel = document.getElementById("buyPctLabel");
+      const sellPctLabel = document.getElementById("sellPctLabel");
+      const buyPctBar = document.getElementById("buyPctBar");
+      const sellPctBar = document.getElementById("sellPctBar");
+      const high24Label = document.getElementById("high24Label");
+      const low24Label = document.getElementById("low24Label");
+      const change24Label = document.getElementById("change24Label");
+
+      const priceInput = document.getElementById("price");
+      const qtyInput = document.getElementById("qty");
+      const totalPriceSpan = document.getElementById("totalPrice");
+      const buyButton = document.getElementById("buyButton");
+      const sellButton = document.getElementById("sellButton");
+
+      const accountInfoGuest = document.getElementById("accountInfoGuest");
+      const accountInfo = document.getElementById("accountInfo");
+      const accountUserLabel = document.getElementById("accountUserLabel");
+      const levelLabel = document.getElementById("levelLabel");
+      const expLabel = document.getElementById("expLabel");
+      const expBar = document.getElementById("expBar");
+      const myOrdersDiv = document.getElementById("myOrders");
+      const walletAvailable = document.getElementById("walletAvailable");
+      const walletFrozen = document.getElementById("walletFrozen");
+      const walletTotal = document.getElementById("walletTotal");
+      const topupButton = document.getElementById("topupButton");
+      const inventoryList = document.getElementById("inventoryList");
+      const userDrawer = document.getElementById("userDrawer");
+      const userDrawerOverlay = document.getElementById("userDrawerOverlay");
+      const drawerUserLabel = document.getElementById("drawerUserLabel");
+      const drawerUserDesc = document.getElementById("drawerUserDesc");
+      const drawerCloseBtn = document.getElementById("drawerCloseBtn");
+      const logoutButton = document.getElementById("logoutButton");
+      const userMenuArrow = document.getElementById("userMenuArrow");
+      const guestButtonClass =
+        "flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-fuchsia-400 to-cyan-300 text-slate-900 font-semibold shadow-lg shadow-fuchsia-500/30 hover:scale-[1.02] transition";
+      const userButtonClass =
+        "group flex items-center gap-3 px-4 py-2 rounded-2xl bg-slate-900/70 border border-slate-700/70 text-slate-100 font-semibold shadow-lg hover:border-cyan-300/60 transition focus:outline-none focus:ring-1 focus:ring-cyan-300/60";
+
+      function randomDiscordId() {
+        return Math.floor(100000 + Math.random() * 900000).toString();
+      }
+      function randomUserName() {
+        const n = Math.floor(100 + Math.random() * 900);
+        return `USER${n}`;
+      }
+
+      function showMessage(text, type = "info") {
+        clearMessage();
+        messageBox.textContent = text;
+        const base = "glass rounded-xl px-4 py-3 text-sm fixed top-4 right-4 z-50";
+        const styles =
+          type === "error"
+            ? "border border-rose-500/40 text-rose-200 bg-rose-500/10"
+            : "border border-cyan-500/40 text-cyan-100 bg-cyan-500/10";
+        messageBox.className = base + " " + styles;
+        toastTimer = setTimeout(() => {
+          clearMessage();
+        }, 2000);
+      }
+      function clearMessage() {
+        if (toastTimer) {
+          clearTimeout(toastTimer);
+          toastTimer = null;
+        }
+        messageBox.className = "hidden";
+        messageBox.textContent = "";
+      }
+
+      function closeUserDrawer() {
+        document.body.classList.remove("drawer-open");
+        userDrawerOverlay.classList.add("invisible");
+        userDrawerOverlay.classList.add("pointer-events-none");
+      }
+
+      function openUserDrawer() {
+        if (!currentUser) return;
+        const label = currentUser.discord_name || currentUser.discord_id;
+        drawerUserLabel.textContent = label || "USER";
+        drawerUserDesc.textContent = currentUser.discord_id ? `ID #${currentUser.discord_id}` : "-";
+        userDrawerOverlay.classList.remove("invisible");
+        userDrawerOverlay.classList.remove("pointer-events-none");
+        document.body.classList.add("drawer-open");
+      }
+
+            function performLogout() {
+        currentUser = null;
+        profile = null;
+        localStorage.removeItem("virtual_exchange_user");
+        renderAuthUI();
+        inventoryList.innerHTML = '<p class="text-slate-500">登入後可查看倉庫</p>';
+        myOrdersDiv.innerHTML = "";
+        walletAvailable.textContent = "0";
+        walletFrozen.textContent = "0";
+        walletTotal.textContent = "0";
+        closeUserDrawer();
+        showMessage("已登出");
+      }
+
+      function renderAuthUI() {
+        if (!currentUser) {
+          if (loginButton) {
+            loginButton.textContent = "登入";
+            loginButton.classList.remove("hidden");
+          }
+          if (userMenuWrapper) userMenuWrapper.classList.remove("hidden");
+          if (userDropdown) userDropdown.classList.add("hidden");
+          if (userMenuLabel) userMenuLabel.textContent = "登入";
+          if (userMenuAvatar) {
+            userMenuAvatar.textContent = "";
+            userMenuAvatar.classList.add("hidden");
+          }
+          if (userMenuArrow) userMenuArrow.classList.add("hidden");
+          if (userMenuButton) userMenuButton.className = guestButtonClass;
+          profileBadge.textContent = "訪客";
+          profileBadge.className = "text-[11px] chip px-2 py-1 rounded-full text-slate-300";
+          accountInfo.classList.add("hidden");
+          accountInfoGuest.classList.remove("hidden");
+          addExpBtn.classList.add("hidden");
+          grantItemBtn.classList.add("hidden");
+          drawerUserLabel.textContent = "訪客";
+          drawerUserDesc.textContent = "請登入以查看帳戶資訊";
+          closeUserDrawer();
+        } else {
+          const label = currentUser.discord_name || currentUser.discord_id;
+          if (loginButton) {
+            loginButton.textContent = label;
+            loginButton.classList.remove("hidden");
+          }
+          if (userMenuWrapper) userMenuWrapper.classList.remove("hidden");
+          if (userMenuLabel) userMenuLabel.textContent = label || "用戶";
+          if (userMenuAvatar) {
+            userMenuAvatar.textContent = (label || "用戶").trim().charAt(0) || "用";
+            userMenuAvatar.classList.remove("hidden");
+          }
+          if (userDropdown) userDropdown.classList.add("hidden");
+          if (userMenuArrow) userMenuArrow.classList.remove("hidden");
+          if (userMenuButton) userMenuButton.className = userButtonClass;
+          profileBadge.textContent = "會員";
+          profileBadge.className =
+            "text-[11px] chip px-2 py-1 rounded-full bg-cyan-500/20 text-cyan-200 border border-cyan-500/40";
+          accountInfo.classList.remove("hidden");
+          accountInfoGuest.classList.add("hidden");
+          addExpBtn.classList.remove("hidden");
+          grantItemBtn.classList.remove("hidden");
+          drawerUserLabel.textContent = label || "USER";
+          drawerUserDesc.textContent = currentUser.discord_id ? `ID #${currentUser.discord_id}` : "-";
+        }
+      }
+
+      function renderProfileUI() {
+        if (!profile) return;
+        const label = profile.discord_name || profile.discord_id;
+        accountUserLabel.textContent = label;
+        levelLabel.textContent = `Lv.${profile.level}`;
+        expLabel.textContent = profile.exp;
+        const pct = Math.min(100, (profile.exp / LEVEL_UP_EXP) * 100);
+        expBar.style.width = `${pct}%`;
+      }
+
+      function showUserDropdown() {
+        if (!currentUser || !userDropdown) return;
+        if (dropdownTimer) clearTimeout(dropdownTimer);
+        userDropdown.classList.remove("hidden");
+      }
+
+      function hideUserDropdown() {
+        if (!userDropdown) return;
+        if (dropdownTimer) clearTimeout(dropdownTimer);
+        dropdownTimer = setTimeout(() => userDropdown.classList.add("hidden"), 120);
+      }
+
+      loginButton.addEventListener("click", async () => {
+        if (!currentUser) {
+          window.location.href = "login.html";
+          return;
+        } else {
+          window.location.href = "user_profiles.html";
+        }
+      });
+
+      if (logoutBtnDesktop) {
+        logoutBtnDesktop.addEventListener("click", () => {
+          if (!currentUser) return;
+          performLogout();
+        });
+      }
+
+      if (userMenuWrapper) {
+        userMenuWrapper.addEventListener("mouseenter", showUserDropdown);
+        userMenuWrapper.addEventListener("mouseleave", hideUserDropdown);
+      }
+
+      if (userMenuButton) {
+        userMenuButton.addEventListener("click", () => {
+          if (!currentUser) {
+            window.location.href = "login.html";
+            return;
+          }
+          if (userDropdown?.classList.contains("hidden")) {
+            showUserDropdown();
+          } else {
+            hideUserDropdown();
+          }
+        });
+      }
+
+      document.addEventListener("click", (e) => {
+        if (!userMenuWrapper || !userDropdown) return;
+        if (!userMenuWrapper.contains(e.target)) {
+          hideUserDropdown();
+        }
+      });
+
+      if (mobileMenuBtn) {
+        mobileMenuBtn.addEventListener("click", () => {
+          if (!currentUser) {
+            window.location.href = "login.html";
+            return;
+          }
+          openUserDrawer();
+        });
+      }
+
+      logoutButton.addEventListener("click", () => {
+        if (!currentUser) return;
+        if (window.confirm("要登出嗎？")) {
+          performLogout();
+        }
+      });
+
+      drawerCloseBtn.addEventListener("click", closeUserDrawer);
+      userDrawerOverlay.addEventListener("click", closeUserDrawer);
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeUserDrawer();
+      });
+
+      addExpBtn.addEventListener
+      addExpBtn.addEventListener("click", async () => {
+        if (!currentUser) return;
+        try {
+          await fetchJSON("/api/users/add-exp", {
+            method: "POST",
+            body: { discord_id: currentUser.discord_id, delta: 50 },
+          });
+          await loadProfile();
+          showMessage("已登出");
+        } catch (err) {
+          showMessage(err.message, "error");
+        }
+      });
+
+      grantItemBtn.addEventListener("click", async () => {
+        if (!currentUser || !selectedItem) {
+          showMessage("已登出");
+          return;
+        }
+        const qty = Number(window.prompt("發放數量", "1"));
+        if (!qty || qty <= 0) return;
+        try {
+          await fetchJSON("/api/inventory/grant", {
+            method: "POST",
+            body: {
+              discord_id: currentUser.discord_id,
+              item_template_id: selectedItem.id,
+              qty,
+              note: "測試發放",
+            },
+          });
+          await loadInventory();
+          showMessage(`已發放 ${qty} 個 ${selectedItem.name}`);
+        } catch (err) {
+          showMessage(err.message, "error");
+        }
+      });
+
+      function updateTotal() {
+        const p = Number(priceInput.value);
+        const q = Number(qtyInput.value);
+        if (!isNaN(p) && !isNaN(q) && q > 0) {
+          totalPriceSpan.textContent = `${(p * q).toLocaleString()} Z`;
+        } else {
+          totalPriceSpan.textContent = "—";
+        }
+      }
+      priceInput.addEventListener("input", () => {
+        priceLockedByUser = true;
+        updateTotal();
+      });
+      qtyInput.addEventListener("input", updateTotal);
+
+      async function submitOrder(side) {
+        clearMessage();
+        if (!currentUser) {
+          showMessage("需要先登入才可以賣賣");
+          return;
+        }
+        if (!selectedItem) {
+          showMessage("已登出");
+          return;
+        }
+        const price = Number(priceInput.value);
+        const qty = Number(qtyInput.value);
+        if (isNaN(price) || price <= 0) {
+          showMessage("已登出");
+          return;
+        }
+        if (isNaN(qty) || qty < 1) {
+          showMessage("已登出");
+          return;
+        }
+        try {
+          const data = await fetchJSON("/api/orders", {
+            method: "POST",
+            body: {
+              discord_id: currentUser.discord_id,
+              discord_name: currentUser.discord_name || null,
+              item_template_id: selectedItem.id,
+              side,
+              price,
+              qty,
+              note: null,
+            },
+          });
+          showMessage(`${side === "BUY" ? "買入" : "賣出"}成功，訂單 #${data.id}`);
+          await loadOrderbook(selectedItem.id);
+          await loadMyOrders();
+          await loadWallet();
+          await loadInventory();
+          await loadTrades(selectedItem.id);
+          updateTotal();
+        } catch (err) {
+          showMessage(err.message, "error");
+        }
+      }
+      buyButton.addEventListener("click", () => submitOrder("BUY"));
+      sellButton.addEventListener("click", () => submitOrder("SELL"));
+
+      topupButton.addEventListener("click", async () => {
+        if (!currentUser) {
+          showMessage("已登出");
+          return;
+        }
+        const input = window.prompt("儲值金額（Zeny）", "1000");
+        if (!input) return;
+        const amount = Number(input);
+        if (isNaN(amount) || amount <= 0) {
+          showMessage("已登出");
+          return;
+        }
+        try {
+          await fetchJSON("/api/wallet/topup", {
+            method: "POST",
+            body: { discord_id: currentUser.discord_id, amount },
+          });
+          showMessage("已登出");
+          await loadWallet();
+        } catch (err) {
+          showMessage(err.message, "error");
+        }
+      });
+
+      async function upsertUser(discord_id, discord_name) {
+        return fetchJSON("/api/users/upsert", {
+          method: "POST",
+          body: { discord_id, discord_name },
+        });
+      }
+
+      async function loadProfile() {
+        if (!currentUser) return;
+        try {
+          profile = await fetchJSON(`/api/users/${encodeURIComponent(currentUser.discord_id)}`);
+          renderProfileUI();
+        } catch (err) {
+          showMessage("已登出");
+        }
+      }
+
+      async function loadWallet() {
+        if (!currentUser) return;
+        try {
+          const data = await fetchJSON(`/api/wallet/${encodeURIComponent(currentUser.discord_id)}`);
+          const balance = Number(data.balance || 0);
+          const frozen = Number(data.frozen_balance || 0);
+          const available = balance - frozen;
+          walletAvailable.textContent = `${available.toLocaleString()} Z`;
+          walletFrozen.textContent = `${frozen.toLocaleString()} Z`;
+          walletTotal.textContent = `${balance.toLocaleString()} Z`;
+        } catch (err) {
+          walletAvailable.textContent = "—";
+          walletFrozen.textContent = "—";
+          walletTotal.textContent = "—";
+          showMessage("已登出");
+        }
+      }
+
+      async function loadInventory() {
+        if (!currentUser) return;
+        try {
+          const data = await fetchJSON(
+            `/api/inventory/${encodeURIComponent(currentUser.discord_id)}`
+          );
+          if (!Array.isArray(data) || data.length === 0) {
+                            inventoryList.innerHTML = '<p class="text-slate-500">登入後可查看倉庫</p>';
+            return;
+          }
+                          inventoryList.innerHTML = '<p class="text-slate-500">登入後可查看倉庫</p>';
+          data.forEach((item) => {
+            const div = document.createElement("div");
+            div.className =
+              "flex items-center justify-between rounded-lg border border-slate-800 bg-slate-900/70 px-2 py-2";
+            div.innerHTML = `
+              <div>
+                <div class="font-semibold">${item.item_template?.name || "道具 #" + item.item_template_id
+              }</div>
+                <div class="text-[11px] text-slate-400">數量 ${item.qty}</div>
+              </div>
+              <div class="text-[11px] text-slate-400">ID ${item.item_template_id}</div>
+            `;
+            inventoryList.appendChild(div);
+          });
+        } catch (err) {
+                          inventoryList.innerHTML = '<p class="text-slate-500">登入後可查看倉庫</p>';
+        }
+      }
+
+      async function loadMyOrders() {
+        if (!currentUser) return;
+        try {
+          const data = await fetchJSON(
+            `/api/orders/by-user/${encodeURIComponent(currentUser.discord_id)}`
+          );
+          const openOrders = Array.isArray(data)
+            ? data.filter((o) => o.status === "OPEN")
+            : [];
+          if (openOrders.length === 0) {
+            myOrdersDiv.innerHTML = '<p class="text-slate-500">目前沒有掛單</p>';
+            return;
+          }
+          myOrdersDiv.innerHTML = "";
+          openOrders.forEach((order) => {
+            const row = document.createElement("div");
+            row.className =
+              "flex items-center justify-between rounded-lg bg-slate-900/70 border border-slate-800 px-2 py-1.5";
+            row.innerHTML = `
+              <div class="text-[11px]">
+                <div>
+                  <span class="${
+                    order.side === "BUY" ? "text-emerald-300" : "text-rose-300"
+                  } font-semibold">${order.side}</span>
+                  @ <span class="text-amber-300">${Number(order.price).toLocaleString()}</span>
+                  x <span class="text-cyan-200">${order.qty}</span>
+                </div>
+                <div class="text-[10px] text-slate-500">
+                  item #${order.item_template_id} · order #${order.id}
+                </div>
+              </div>
+              <button class="text-[11px] text-rose-300 hover:text-rose-200 underline" data-id="${order.id}">取消</button>
+            `;
+            const btn = row.querySelector("button");
+            btn.addEventListener("click", () => cancelOrder(order.id));
+            myOrdersDiv.appendChild(row);
+          });
+        } catch (err) {
+          myOrdersDiv.innerHTML = '<p class="text-rose-400 text-[11px]">載入掛單失敗</p>';
+        }
+      }
+
+      async function cancelOrder(orderId) {
+        if (!currentUser) return;
+        if (!window.confirm(`取消訂單 #${orderId}？`)) return;
+        try {
+          await fetchJSON(
+            `/api/orders/${orderId}/cancel?discord_id=${encodeURIComponent(currentUser.discord_id)}`,
+            { method: "POST" }
+          );
+          showMessage("已登出");
+          await loadMyOrders();
+          await loadWallet();
+          await loadInventory();
+          if (selectedItem) await loadOrderbook(selectedItem.id);
+        } catch (err) {
+          showMessage(err.message, "error");
+        }
+      }
+
+      async function loadItemTemplates() {
+        try {
+          const data = await fetchJSON("/api/item-templates");
+          if (!Array.isArray(data)) throw new Error("格式錯誤");
+          allItems = data;
+          renderItemDropdown();
+          if (data.length) selectItem(data[0]);
+        } catch (err) {
+          showMessage("已登出");
+        }
+      }
+
+      function renderItemDropdown(filter = "") {
+        const q = filter.trim().toLowerCase();
+        itemListPanel.innerHTML = "";
+        const filtered = allItems.filter((item) => {
+          if (!q) return true;
+          return (
+            item.name.toLowerCase().includes(q) ||
+            item.game.toLowerCase().includes(q) ||
+            String(item.id).includes(q)
+          );
+        });
+        if (!filtered.length) {
+          itemListPanel.innerHTML =
+            '<p class="text-slate-500 text-[12px] px-2">沒有符合條件的道具</p>';
+          return;
+        }
+        filtered.forEach((item) => {
+          const row = document.createElement("button");
+          row.type = "button";
+          row.className =
+            "w-full text-left rounded-lg px-3 py-2 bg-slate-900/70 border border-slate-800 hover:border-cyan-300/60 hover:bg-slate-900";
+          row.innerHTML = `
+            <div class="flex items-center justify-between text-sm">
+              <span class="font-semibold">${item.name}</span>
+            </div>
+            <div class="text-[11px] text-slate-400 mt-0.5">裝備 #${item.id} · 稀有度 ${rarityLabel(item.rarity)}</div>
+          `;
+          row.addEventListener("click", () => {
+            selectItem(item);
+            toggleDropdown(false);
+          });
+          itemListPanel.appendChild(row);
+        });
+      }
+
+      function rarityLabel(rarity) {
+        switch ((rarity || "").toUpperCase()) {
+          case "LEGENDARY":
+            return "傳說";
+          case "EPIC":
+            return "史詩";
+          case "RARE":
+            return "稀有";
+          case "UNCOMMON":
+            return "高級";
+          default:
+            return "普通";
+        }
+      }
+
+      function toggleDropdown(show) {
+        if (show) {
+          itemDropdownPanel.classList.remove("hidden");
+        } else {
+          itemDropdownPanel.classList.add("hidden");
+        }
+      }
+
+      itemDropdownBtn.addEventListener("click", () => {
+        const isOpen = !itemDropdownPanel.classList.contains("hidden");
+        toggleDropdown(!isOpen);
+      });
+
+      itemSearchInput.addEventListener("input", () => {
+        renderItemDropdown(itemSearchInput.value);
+      });
+
+      document.addEventListener("click", (e) => {
+        if (!itemDropdownPanel.contains(e.target) && !itemDropdownBtn.contains(e.target)) {
+          toggleDropdown(false);
+        }
+      });
+
+      function selectItem(item) {
+        selectedItem = item;
+        itemDropdownLabel.textContent = item.name;
+        selectedItemName.textContent = item.name;
+        lastTradePrice = null;
+        if (item.initial_price) {
+          setReferencePrice(item.initial_price);
+        } else {
+          selectedItemPrice.textContent = "—";
+        }
+        priceInput.value = "";
+        priceLockedByUser = false;
+        updateTotal();
+        loadOrderbook(item.id);
+        loadTrades(item.id);
+      }
+
+      async function loadOrderbook(itemId) {
+        const [asks, bids] = await Promise.all([
+          loadOrderbookSide(itemId, "SELL"),
+          loadOrderbookSide(itemId, "BUY"),
+        ]);
+        renderStackedBook(asks, bids);
+        updateIndicativePrice(bids, asks);
+      }
+
+      async function loadOrderbookSide(itemId, side) {
+        if (!itemId) return [];
+        try {
+          const data = await fetchJSON(`/api/orderbook/${itemId}?side=${encodeURIComponent(side)}`);
+          if (!Array.isArray(data)) throw new Error("格式錯誤");
+          return data;
+        } catch (err) {
+          return [];
+        }
+      }
+
+      function renderStackedBook(rawAsks = [], rawBids = []) {
+        // Sell side: lowest at top, highest at bottom.
+        const asks = [...rawAsks].sort((a, b) => a.price - b.price);
+        const bids = [...rawBids].sort((a, b) => b.price - a.price); // 倉支無變動順序維持高價在上方
+
+        renderSideStack(asks, asksStack, true);
+        renderSideStack(bids, bidsStack, false);
+        // Keep sell list scrolled to bottom so highest price stays visible after refresh.
+        if (asksStack) {
+          requestAnimationFrame(() => {
+            asksStack.scrollTop = asksStack.scrollHeight;
+          });
+        }
+
+        const sellVol = asks.reduce((s, x) => s + Number(x.qty), 0);
+        const buyVol = bids.reduce((s, x) => s + Number(x.qty), 0);
+        const totalVol = sellVol + buyVol || 1;
+        const buyPct = Math.round((buyVol / totalVol) * 100);
+        const sellPct = 100 - buyPct;
+        buyPctLabel.textContent = `買單 ${buyPct}%`;
+        sellPctLabel.textContent = `賣單 ${sellPct}%`;
+        buyPctBar.style.width = `${buyPct}%`;
+        sellPctBar.style.width = `${sellPct}%`;
+        sellPctBar.style.marginLeft = `${buyPct}%`;
+
+        const bestAsk = asks.length ? Number(asks[0].price) : null;
+        const bestBid = bids.length ? Number(bids[0].price) : null;
+        const mid = lastTradePrice !== null ? lastTradePrice : bestBid !== null && bestAsk !== null
+          ? (bestBid + bestAsk) / 2
+          : bestBid ?? bestAsk ?? null;
+        let refMid = mid;
+        if (refMid === null && selectedItem && Number.isFinite(Number(selectedItem.initial_price))) {
+          refMid = Number(selectedItem.initial_price);
+        }
+        if (refMid !== null) {
+          midPriceLabel.textContent = `${Number(refMid).toLocaleString(undefined, {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2,
+          })} Z`;
+        } else {
+          midPriceLabel.textContent = "—";
+        }
+      }
+
+      function renderSideStack(data, targetDiv, isSell) {
+        if (!data || data.length === 0) {
+          targetDiv.innerHTML =
+            '<p class="text-slate-500 text-[12px] text-center">目前沒有資料</p>';
+          return;
+        }
+        let cumulative = 0;
+        const combined = data.map((d) => {
+          cumulative += Number(d.qty);
+          return { ...d, total: cumulative };
+        });
+        const maxTotal = Math.max(...combined.map((c) => c.total), 1);
+        targetDiv.innerHTML = "";
+        combined.forEach((order) => {
+          const pct = Math.max(6, (order.total / maxTotal) * 100);
+          const barColor = isSell ? "from-rose-600/60 to-rose-500/30" : "from-emerald-600/60 to-emerald-500/30";
+          const priceColor = isSell ? "text-rose-200" : "text-emerald-200";
+          const row = document.createElement("div");
+          row.className =
+            "relative overflow-hidden rounded-lg border border-slate-800 bg-slate-900/60 hover:border-cyan-300/60 hover:bg-slate-900 cursor-pointer transition";
+          row.innerHTML = `
+            <div class="absolute inset-0 bg-gradient-to-l ${barColor}" style="width:${pct}%;"></div>
+            <div class="relative grid grid-cols-3 px-3 py-1.5 text-[12px]">
+              <div class="${priceColor} font-semibold">${Number(order.price).toLocaleString()}</div>
+              <div class="text-right text-slate-100">${order.qty}</div>
+              <div class="text-right text-slate-400">${order.total}</div>
+            </div>
+          `;
+          row.dataset.price = order.price;
+          row.addEventListener("click", () => {
+            priceInput.value = Number(order.price);
+            priceLockedByUser = true;
+            updateTotal();
+          });
+          targetDiv.appendChild(row);
+        });
+      }
+
+      function updateIndicativePrice(bids = [], asks = []) {
+        if (lastTradePrice !== null) {
+          setReferencePrice(lastTradePrice);
+          return;
+        }
+        const bestBid = bids && bids.length ? Number(bids[0].price) : null;
+        const bestAsk = asks && asks.length ? Number(asks[0].price) : null;
+        let ref = null;
+        if (bestBid !== null && bestAsk !== null) {
+          ref = (bestBid + bestAsk) / 2;
+        } else if (bestBid !== null) {
+          ref = bestBid;
+        } else if (bestAsk !== null) {
+          ref = bestAsk;
+        }
+        if (ref === null && selectedItem && Number.isFinite(Number(selectedItem.initial_price))) {
+          ref = Number(selectedItem.initial_price);
+        }
+        if (ref !== null) {
+          setReferencePrice(ref);
+        }
+      }
+
+      function setReferencePrice(value) {
+        selectedItemPrice.textContent = `${Number(value).toLocaleString(undefined, {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 2,
+        })} Z`;
+        if (!priceLockedByUser) {
+          priceInput.value = Number(value).toFixed(0);
+          updateTotal();
+        }
+      }
+
+      function update24hHighLow(trades = []) {
+        if (!high24Label || !low24Label || !change24Label) return;
+        const reset = () => {
+          high24Label.textContent = "24H High: --";
+          low24Label.textContent = "24H Low: --";
+          change24Label.textContent = "24H Change: --";
+        };
+        if (!Array.isArray(trades) || trades.length === 0) {
+          reset();
+          return;
+        }
+        const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+        const filtered = trades.filter((t) => {
+          const ts = new Date(t.created_at).getTime();
+          return Number.isFinite(ts) && ts >= cutoff;
+        });
+        const poolTrades = filtered.length ? filtered : trades;
+        const pool = poolTrades
+          .map((t) => Number(t.price))
+          .filter((v) => Number.isFinite(v));
+        if (!pool.length) {
+          reset();
+          return;
+        }
+        const high = Math.max(...pool);
+        const low = Math.min(...pool);
+        high24Label.textContent = `24H High: ${high.toLocaleString()} Z`;
+        low24Label.textContent = `24H Low: ${low.toLocaleString()} Z`;
+        const sorted = [...poolTrades].sort(
+          (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        );
+        const firstPrice = Number(sorted[0]?.price);
+        const lastPrice = Number(sorted[sorted.length - 1]?.price);
+        if (Number.isFinite(firstPrice) && firstPrice !== 0 && Number.isFinite(lastPrice)) {
+          const pct = ((lastPrice - firstPrice) / firstPrice) * 100;
+          const sign = pct > 0 ? "+" : "";
+          change24Label.textContent = `24H Change: ${sign}${pct.toFixed(2)}%`;
+        } else {
+          change24Label.textContent = "24H Change: --";
+        }
+      }
+      async function loadTrades(itemId) {
+        const klineStatus = document.getElementById("klineStatus");
+        if (!itemId) return;
+        try {
+          const ok = await ensureChart();
+          if (!ok) {
+            klineStatus.textContent = "載入 K 線套件失敗（可能被網路/CSP 擋下）";
+            update24hHighLow([]);
+            return;
+          }
+          const trades = await fetchJSON(`/api/trades/${itemId}?limit=300`);
+          if (!Array.isArray(trades) || trades.length === 0) {
+            const base = selectedItem && Number.isFinite(Number(selectedItem.initial_price))
+              ? Number(selectedItem.initial_price)
+              : lastTradePrice || 100;
+            const waveCandles = generateWaveCandles(base);
+            ensureChart();
+            if (candleSeries) {
+              candleSeries.setData(candlesToWaveLine(waveCandles));
+            }
+            klineStatus.textContent = "尚無成交（展示波動中）";
+            lastTradePrice = base;
+            setReferencePrice(base);
+            update24hHighLow([]);
+            return;
+          }
+          lastTradePrice = Number(trades[trades.length - 1].price);
+          const candles = aggregateToCandles(trades, 60);
+          const candleData = candles.length >= 3 ? candles : generateWaveCandles(lastTradePrice);
+          const waveLine = candlesToWaveLine(candleData);
+          ensureChart();
+          if (!candleSeries) {
+            klineStatus.textContent = "圖表未初始化";
+            return;
+          }
+          candleSeries.setData(waveLine);
+          setReferencePrice(lastTradePrice);
+          update24hHighLow(trades);
+          klineStatus.textContent = `成交 ${trades.length} 筆 / ${candleData.length} 根`;
+        } catch (err) {
+          console.error("loadTrades error:", err);
+          klineStatus.textContent = `載入失敗：${err.message || "unknown"}`;
+          candleSeries && candleSeries.setData([]);
+          update24hHighLow([]);
+        }
+      }
+
+      function aggregateToCandles(trades, intervalSec = 60) {
+        const buckets = new Map();
+        trades.forEach((t) => {
+          const ts = Math.floor(new Date(t.created_at).getTime() / 1000);
+          const bucket = ts - (ts % intervalSec);
+          const price = Number(t.price);
+          const qty = Number(t.qty);
+          if (!buckets.has(bucket)) {
+            buckets.set(bucket, { time: bucket, open: price, high: price, low: price, close: price, volume: qty });
+          } else {
+            const c = buckets.get(bucket);
+            c.high = Math.max(c.high, price);
+            c.low = Math.min(c.low, price);
+            c.close = price;
+            c.volume += qty;
+          }
+        });
+        return Array.from(buckets.values()).sort((a, b) => a.time - b.time);
+      }
+
+      function generateWaveCandles(basePrice, count = 24, stepSec = 30) {
+        const candles = [];
+        const now = Math.floor(Date.now() / 1000);
+        const amplitude = basePrice * 0.02; // ±2% 波動
+        for (let i = count - 1; i >= 0; i--) {
+          const time = now - i * stepSec;
+          const wave = Math.sin((i / count) * Math.PI * 2) * amplitude;
+          const open = basePrice + wave * 0.5;
+          const close = basePrice + wave;
+          const high = Math.max(open, close) + amplitude * 0.2;
+          const low = Math.min(open, close) - amplitude * 0.2;
+          candles.push({
+            time,
+            open: Number(open.toFixed(2)),
+            high: Number(high.toFixed(2)),
+            low: Number(low.toFixed(2)),
+            close: Number(close.toFixed(2)),
+          });
+        }
+        return candles;
+      }
+
+      function candlesToWaveLine(candles) {
+        if (!candles || !candles.length) return [];
+        const line = [];
+        const amp = Math.max(1, Number(candles[0].close) * 0.01);
+        candles.forEach((c, idx) => {
+          const jitter = Math.sin(idx) * amp * 0.2;
+          line.push({
+            time: c.time,
+            value: Number(c.close) + jitter,
+          });
+        });
+        return line;
+      }
+
+      async function ensureChart() {
+        const ready = await ensureChartLib();
+        if (!ready) return false;
+        if (chart && candleSeries) return true;
+        const container = document.getElementById("klineChart");
+        container.innerHTML = ""; // 清空舊內容
+        if (!window.LightweightCharts || typeof LightweightCharts.createChart !== "function") {
+          console.error("LightweightCharts 未載入");
+          return false;
+        }
+        chart = LightweightCharts.createChart(container, {
+          layout: {
+            background: { type: "solid", color: "rgba(0,0,0,0)" },
+            textColor: "#cbd5f5",
+          },
+          grid: {
+            vertLines: { color: "rgba(255,255,255,0.04)" },
+            horzLines: { color: "rgba(255,255,255,0.04)" },
+          },
+          crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+          rightPriceScale: { borderVisible: false, autoScale: true },
+          timeScale: { borderVisible: false, timeVisible: true, secondsVisible: false },
+          width: container.clientWidth,
+          height: container.clientHeight,
+        });
+        if (typeof chart.addLineSeries === "function") {
+          candleSeries = chart.addLineSeries({
+            color: "#22d3ee",
+            lineWidth: 2,
+          });
+        } else if (typeof chart.addCandlestickSeries === "function") {
+          // 極端情況，仍可用 K 線
+          candleSeries = chart.addCandlestickSeries({
+            upColor: "#22d3ee",
+            downColor: "#f472b6",
+            borderUpColor: "#22d3ee",
+            borderDownColor: "#f472b6",
+            wickUpColor: "#22d3ee",
+            wickDownColor: "#f472b6",
+          });
+        } else {
+          console.error("Chart API 缺少 series 建立方法，放棄繪圖");
+          return false;
+        }
+        window.addEventListener("resize", () => {
+          chart.applyOptions({ width: container.clientWidth, height: container.clientHeight });
+        });
+        return true;
+      }
+
+      async function ensureChartLib() {
+        if (window.LightweightCharts && typeof LightweightCharts.createChart === "function") {
+          return true;
+        }
+        if (!chartLibPromise) {
+          const sources = [
+            "./lightweight-charts.standalone.production.js", // 本地檔案
+            "https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.min.js",
+            "https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js",
+          ];
+          chartLibPromise = (async () => {
+            for (const src of sources) {
+              const ok = await loadScriptOnce(src);
+              if (ok && window.LightweightCharts && typeof LightweightCharts.createChart === "function") {
+                return true;
+              }
+            }
+            return false;
+          })();
+        }
+        return chartLibPromise;
+      }
+
+      function loadScriptOnce(src) {
+        return new Promise((resolve) => {
+          const existing = Array.from(document.scripts).find((s) => s.src === src);
+          if (existing) {
+            existing.onload = () => resolve(true);
+            existing.onerror = () => resolve(false);
+            return;
+          }
+          const s = document.createElement("script");
+          s.src = src;
+          s.async = true;
+          s.onload = () => resolve(true);
+          s.onerror = () => resolve(false);
+          document.head.appendChild(s);
+        });
+      }
+
+      async function fetchJSON(path, options = {}) {
+        const url = `${API_BASE || ""}${path}`;
+        const headers = { ...(options.headers || {}), ...NGROK_BYPASS_HEADER };
+        if (options.body && !(options.body instanceof FormData)) {
+          headers["Content-Type"] = "application/json";
+        }
+        const res = await fetch(url, {
+          method: options.method || "GET",
+          headers,
+          body: options.body && !(options.body instanceof FormData) ? JSON.stringify(options.body) : options.body,
+        });
+        const text = await res.text();
+        let data;
+        try {
+          data = text ? JSON.parse(text) : null;
+        } catch {
+          throw new Error("伺服器回傳非 JSON");
+        }
+        if (!res.ok) {
+          const detail = (data && data.detail) || res.statusText || "Request failed";
+          throw new Error(detail);
+        }
+        return data;
+      }
+
+      // 初始化
+      const savedUser = localStorage.getItem("virtual_exchange_user");
+      if (savedUser) {
+        try {
+          currentUser = JSON.parse(savedUser);
+        } catch {
+          currentUser = null;
+        }
+      }
+      renderAuthUI();
+      loadItemTemplates();
+      if (currentUser) {
+        loadProfile();
+        loadWallet();
+        loadInventory();
+        loadMyOrders();
+      }
+
+      // 簡單輪詢：每 3 秒刷新 orderbook、K 線與我的掛單（登入時）
+      setInterval(() => {
+        if (selectedItem) {
+          loadOrderbook(selectedItem.id);
+          loadTrades(selectedItem.id);
+        }
+        if (currentUser) {
+          loadMyOrders();
+          loadWallet();
+          loadInventory();
+        }
+      }, 3000);
+    </script>
+  </body>
+</html>
+
+

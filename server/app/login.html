@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>登入 | 虛擬道具交易所</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      body {
+        font-family: "Manrope", "Space Grotesk", system-ui, -apple-system, sans-serif;
+        background:
+          radial-gradient(circle at 10% 20%, rgba(56, 189, 248, 0.12), transparent 26%),
+          radial-gradient(circle at 90% 10%, rgba(192, 132, 252, 0.14), transparent 25%),
+          radial-gradient(circle at 50% 90%, rgba(251, 191, 36, 0.12), transparent 30%),
+          linear-gradient(160deg, #090d1a 0%, #0c1224 45%, #0b1020 100%);
+        color: #e5e7eb;
+        min-height: 100vh;
+      }
+      .glass {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(14px);
+      }
+      .input {
+        background: rgba(15, 23, 42, 0.6);
+        border: 1px solid rgba(148, 163, 184, 0.25);
+      }
+      .input:focus {
+        border-color: #a855f7;
+        box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.25);
+        outline: none;
+      }
+    </style>
+  </head>
+  <body class="flex items-center justify-center px-4 py-10">
+    <div class="glass w-full max-w-lg rounded-3xl p-8 space-y-6 relative">
+      <a href="index.html" class="absolute right-4 top-4 text-slate-400 hover:text-white text-xl leading-none">×</a>
+      <div class="text-center space-y-2">
+        <div id="formTitleSub" class="text-xs uppercase tracking-[0.2em] text-fuchsia-200">歡迎回來</div>
+        <div id="formTitleMain" class="text-2xl font-bold text-white">登入您的帳戶開始交易</div>
+      </div>
+
+      <div class="flex bg-slate-900/50 border border-slate-800 rounded-2xl overflow-hidden">
+        <button id="tabLogin" class="w-1/2 py-2.5 font-semibold text-white bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500">登入</button>
+        <button id="tabRegister" class="w-1/2 py-2.5 text-center text-slate-300 hover:text-white">註冊</button>
+      </div>
+
+      <form id="formLogin" class="space-y-4">
+        <div class="space-y-2">
+          <label class="text-sm text-slate-300">電子郵件</label>
+          <div class="flex items-center gap-2 input rounded-xl px-3 py-2">
+            <span class="text-slate-400">📧</span>
+            <input id="loginEmail" type="email" placeholder="請輸入電子郵件" class="w-full bg-transparent focus:outline-none" required />
+          </div>
+        </div>
+        <div class="space-y-2">
+          <label class="text-sm text-slate-300">密碼</label>
+          <div class="flex items-center gap-2 input rounded-xl px-3 py-2">
+            <span class="text-slate-400">🔒</span>
+            <input id="loginPassword" type="password" placeholder="請輸入密碼" class="w-full bg-transparent focus:outline-none" required />
+            <button type="button" class="text-slate-400 hover:text-slate-200 text-sm">👁</button>
+          </div>
+          <div class="text-right text-sm">
+            <a href="#" class="text-cyan-300 hover:text-white">忘記密碼？</a>
+          </div>
+        </div>
+        <div id="loginError" class="text-rose-400 text-sm hidden"></div>
+
+        <button type="submit" class="w-full py-2.5 rounded-xl font-semibold text-white bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 shadow-lg shadow-fuchsia-500/30 hover:scale-[1.01] transition">
+          登入
+        </button>
+      </form>
+
+      <form id="formRegister" class="space-y-4 hidden">
+        <div class="space-y-2">
+          <label class="text-sm text-slate-300">用戶名稱</label>
+          <div class="flex items-center gap-2 input rounded-xl px-3 py-2">
+            <span class="text-slate-400">👤</span>
+            <input id="regName" type="text" placeholder="請輸入用戶名稱" class="w-full bg-transparent focus:outline-none" required />
+          </div>
+        </div>
+        <div class="space-y-2">
+          <label class="text-sm text-slate-300">電子郵件</label>
+          <div class="flex items-center gap-2 input rounded-xl px-3 py-2">
+            <span class="text-slate-400">📧</span>
+            <input id="regEmail" type="email" placeholder="請輸入電子郵件" class="w-full bg-transparent focus:outline-none" required />
+          </div>
+        </div>
+        <div class="space-y-2">
+          <label class="text-sm text-slate-300">密碼</label>
+          <div class="flex items-center gap-2 input rounded-xl px-3 py-2">
+            <span class="text-slate-400">🔒</span>
+            <input id="regPassword" type="password" placeholder="請輸入密碼" class="w-full bg-transparent focus:outline-none" required />
+            <button type="button" class="text-slate-400 hover:text-slate-200 text-sm">👁</button>
+          </div>
+        </div>
+        <div class="space-y-2">
+          <label class="text-sm text-slate-300">確認密碼</label>
+          <div class="flex items-center gap-2 input rounded-xl px-3 py-2">
+            <span class="text-slate-400">🔒</span>
+            <input id="regPassword2" type="password" placeholder="請再輸入密碼" class="w-full bg-transparent focus:outline-none" required />
+          </div>
+        </div>
+        <div id="registerError" class="text-rose-400 text-sm hidden"></div>
+        <button type="submit" class="w-full py-2.5 rounded-xl font-semibold text-white bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 shadow-lg shadow-fuchsia-500/30 hover:scale-[1.01] transition">
+          註冊
+        </button>
+      </form>
+
+      <div class="flex items-center gap-3 text-slate-400 text-sm pt-2">
+        <div class="h-px flex-1 bg-slate-700"></div>
+        <span>或使用</span>
+        <div class="h-px flex-1 bg-slate-700"></div>
+      </div>
+
+      <div class="space-y-3">
+        <button id="discordLoginBtn" type="button" class="w-full py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 font-semibold hover:border-slate-500 flex items-center justify-center gap-2">
+          <img src="discord-logo.svg" alt="Discord" class="w-5 h-5" />
+          <span>使用 Discord 登入</span>
+        </button>
+      </div>
+
+      <div class="text-center text-xs text-slate-400">
+        登入即表示您同意我們的
+        <a href="#" class="text-cyan-300 hover:text-white">服務條款</a>
+        和
+        <a href="#" class="text-cyan-300 hover:text-white">隱私政策</a>
+      </div>
+    </div>
+    <script>
+      const API_BASE = "https://tapes-june-addresses-mount.trycloudflare.com";
+      //const API_BASE = "http://127.0.0.1:8000";
+      const NGROK_BYPASS_HEADER = { "ngrok-skip-browser-warning": "true" };
+
+      const tabLogin = document.getElementById('tabLogin');
+      const tabRegister = document.getElementById('tabRegister');
+      const formLogin = document.getElementById('formLogin');
+      const formRegister = document.getElementById('formRegister');
+      const formTitleSub = document.getElementById('formTitleSub');
+      const formTitleMain = document.getElementById('formTitleMain');
+      const loginError = document.getElementById('loginError');
+      const registerError = document.getElementById('registerError');
+      const loginButton = formLogin.querySelector('button[type="submit"]');
+      const registerButton = formRegister.querySelector('button[type="submit"]');
+      const discordLoginBtn = document.getElementById('discordLoginBtn');
+      const REDIRECT_MS = 800;
+      const mockDiscordId = () => Math.floor(100000 + Math.random() * 900000).toString();
+      const mockDiscordName = () => `USER${Math.floor(100 + Math.random() * 900)}`;
+
+      function activateTab(mode) {
+        const isLogin = mode === 'login';
+        formLogin.classList.toggle('hidden', !isLogin);
+        formRegister.classList.toggle('hidden', isLogin);
+        tabLogin.className = isLogin
+          ? "w-1/2 py-2.5 font-semibold text-white bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"
+          : "w-1/2 py-2.5 text-center text-slate-300 hover:text-white";
+        tabRegister.className = !isLogin
+          ? "w-1/2 py-2.5 font-semibold text-white bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"
+          : "w-1/2 py-2.5 text-center text-slate-300 hover:text-white";
+        formTitleSub.textContent = isLogin ? "歡迎回來" : "加入我們";
+        formTitleMain.textContent = isLogin ? "登入您的帳戶開始交易" : "創建新帳戶開始交易";
+      }
+
+      tabLogin.addEventListener('click', () => activateTab('login'));
+      tabRegister.addEventListener('click', () => activateTab('register'));
+
+      formLogin.addEventListener('submit', (e) => {
+        e.preventDefault();
+        loginError.classList.add('hidden');
+        const email = document.getElementById('loginEmail').value.trim();
+        const pwd = document.getElementById('loginPassword').value.trim();
+        if (!email || !pwd) {
+          showToast('請輸入電子郵件與密碼', 'error');
+          return;
+        }
+        doLogin({ email, password: pwd });
+      });
+
+      formRegister.addEventListener('submit', (e) => {
+        e.preventDefault();
+        registerError.classList.add('hidden');
+        const name = document.getElementById('regName').value.trim();
+        const email = document.getElementById('regEmail').value.trim();
+        const pwd = document.getElementById('regPassword').value.trim();
+        const pwd2 = document.getElementById('regPassword2').value.trim();
+        if (!name || !email || !pwd || !pwd2) {
+          showToast('請完整填寫所有欄位', 'error');
+          return;
+        }
+        if (pwd !== pwd2) {
+          showToast('兩次密碼不一致', 'error');
+          return;
+        }
+        doRegister({ username: name, email, password: pwd });
+      });
+
+      async function fetchJSON(path, options = {}) {
+        const url = `${API_BASE || ''}${path}`;
+        const headers = { ...(options.headers || {}), ...NGROK_BYPASS_HEADER };
+        if (options.body && !(options.body instanceof FormData)) {
+          headers['Content-Type'] = 'application/json';
+        }
+        const res = await fetch(url, {
+          method: options.method || 'GET',
+          headers,
+          body: options.body && !(options.body instanceof FormData) ? JSON.stringify(options.body) : options.body,
+        });
+        const text = await res.text();
+        let data = null;
+        try {
+          data = text ? JSON.parse(text) : null;
+        } catch {
+          throw new Error('伺服器回應非 JSON');
+        }
+        if (!res.ok) {
+          const detail = data?.detail;
+          if (detail && typeof detail === 'object') {
+            const err = new Error(detail.message || JSON.stringify(detail));
+            err.code = detail.code;
+            throw err;
+          }
+          const err = new Error(detail || res.statusText || 'Request failed');
+          throw err;
+        }
+        return data;
+      }
+
+      async function doRegister(payload) {
+        try {
+          registerButton.disabled = true;
+          registerButton.textContent = '註冊中...';
+          const data = await fetchJSON('/api/auth/register', {
+            method: 'POST',
+            body: payload,
+          });
+          const uid = data?.uid || data?.discord_id || '';
+          saveSession(data);
+          showToast(uid ? `註冊成功，UID：${uid}` : '註冊成功', 'success');
+          setTimeout(() => {
+            window.location.href = 'index.html';
+          }, REDIRECT_MS);
+        } catch (err) {
+          let msg = err.message || '註冊失敗';
+          if (err.code === 2002) msg = 'Email 已被註冊';
+          else if (err.code === 2003) msg = '用戶名稱已被使用';
+          else if (err.code === 2001) msg = '密碼格式不符合規範';
+          showToast(msg, 'error');
+        } finally {
+          registerButton.disabled = false;
+          registerButton.textContent = '註冊';
+        }
+      }
+
+      async function doLogin(payload) {
+        try {
+          loginButton.disabled = true;
+          loginButton.textContent = '登入中...';
+          const data = await fetchJSON('/api/auth/login', {
+            method: 'POST',
+            body: payload,
+          });
+          const uid = data?.uid || data?.discord_id || '';
+          saveSession(data);
+          showToast(uid ? `登入成功，UID：${uid}` : '登入成功', 'success');
+          setTimeout(() => {
+            window.location.href = 'index.html';
+          }, REDIRECT_MS);
+        } catch (err) {
+          let msg = err.message || '登入失敗';
+          if (err.code === 2005) msg = '帳號未註冊';
+          else if (err.code === 2004) msg = '帳號或密碼錯誤';
+          showToast(msg, 'error');
+        } finally {
+          loginButton.disabled = false;
+          loginButton.textContent = '登入';
+        }
+      }
+
+      function saveSession(user) {
+        if (!user) return;
+        const mapped = {
+          discord_id: user.uid || user.discord_id,
+          discord_name: user.username || user.email || 'USER',
+          email: user.email || null,
+          provider: user.provider || 'platform',
+        };
+        localStorage.setItem('virtual_exchange_user', JSON.stringify(mapped));
+      }
+
+      if (discordLoginBtn) {
+        discordLoginBtn.addEventListener('click', async () => {
+          const suggestedId = mockDiscordId();
+          const id = window.prompt('請輸入 Discord ID', suggestedId);
+          if (!id) return;
+          const suggestedName = mockDiscordName();
+          const name = window.prompt('暱稱 (可留空)', suggestedName) || suggestedName;
+          const email = `discord_${id.trim()}@example.com`;
+          const password = `discord-${id.trim()}`;
+          const username = name.trim();
+          try {
+            // 先嘗試登入；若未註冊則註冊後再登入
+            let data = null;
+            try {
+              data = await fetchJSON('/api/auth/login', {
+                method: 'POST',
+                body: { email, password },
+              });
+            } catch (err) {
+              if (err.code === 2005) {
+                // 未註冊，改用註冊
+                data = await fetchJSON('/api/auth/register', {
+                  method: 'POST',
+                  body: {
+                    provider: 'discord',
+                    discord_id: id.trim(),
+                    email,
+                    password,
+                    username,
+                  },
+                });
+              } else {
+                throw err;
+              }
+            }
+            if (data) {
+              data.provider = 'discord';
+              data.discord_name = username;
+              data.discord_id = id.trim();
+              saveSession(data);
+              showToast(`已以 Discord 模擬登入：${username}`, 'success');
+              setTimeout(() => {
+                window.location.href = 'index.html';
+              }, REDIRECT_MS);
+            }
+          } catch (err) {
+            let msg = err.message || 'Discord 登入失敗';
+            showToast(msg, 'error');
+          }
+        });
+      }
+
+      function showToast(text, type = 'info') {
+        let toast = document.getElementById('toastBox');
+        if (!toast) {
+          toast = document.createElement('div');
+          toast.id = 'toastBox';
+          toast.className = 'fixed top-5 right-5 px-4 py-2 rounded-lg text-sm shadow-lg z-50 transition-opacity duration-200';
+          document.body.appendChild(toast);
+        }
+        const base = 'border ';
+        const cls = type === 'error'
+          ? 'bg-rose-500/10 border-rose-400/60 text-rose-100'
+          : 'bg-emerald-500/10 border-emerald-400/60 text-emerald-100';
+        toast.className = `fixed top-5 right-5 px-4 py-2 rounded-lg text-sm shadow-lg z-50 transition-opacity duration-200 ${base}${cls}`;
+        toast.textContent = text;
+        toast.style.opacity = '1';
+        clearTimeout(showToast._timer);
+        showToast._timer = setTimeout(() => {
+          toast.style.opacity = '0';
+        }, 2200);
+      }
+    </script>
+  </body>
+</html>

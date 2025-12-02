@@ -1,782 +1,448 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-Hant">
   <head>
     <meta charset="UTF-8" />
-    <title>RO 道具交易所 · DEMO</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RPG 冒險裝備交易平台 | 首頁</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      :root {
+        --bg: #0b1020;
+        --card: #11172a;
+        --panel: #0f162a;
+        --accent: #c084fc;
+        --accent-2: #38bdf8;
+        --amber: #fbbf24;
+        --green: #34d399;
+        --red: #f87171;
+      }
+      body {
+        font-family: "Manrope", "Space Grotesk", system-ui, -apple-system, sans-serif;
+        background: radial-gradient(circle at 10% 20%, rgba(56, 189, 248, 0.12), transparent 26%),
+          radial-gradient(circle at 90% 10%, rgba(192, 132, 252, 0.14), transparent 25%),
+          radial-gradient(circle at 50% 90%, rgba(251, 191, 36, 0.12), transparent 30%),
+          linear-gradient(160deg, #090d1a 0%, #0c1224 40%, #0b1020 100%);
+        color: #e5e7eb;
+      }
+      .glass {
+        background: linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+        border: 1px solid rgba(255,255,255,0.06);
+        box-shadow: 0 20px 80px rgba(0,0,0,0.45);
+        backdrop-filter: blur(14px);
+      }
+      .pill { border: 1px solid rgba(255,255,255,0.08); }
+      .ticker::-webkit-scrollbar { display: none; }
+      .ticker { scrollbar-width: none; }
+      .ticker-track {
+        display: inline-flex;
+        gap: 12px;
+        animation: ticker-move 20s linear infinite;
+      }
+      .ticker:hover .ticker-track { animation-play-state: paused; }
+      @keyframes ticker-move {
+        0% { transform: translateX(0); }
+        100% { transform: translateX(-50%); }
+      }
+    </style>
   </head>
-    <!-- 提示訊息區 -->
-    <div
-    id="message"
-    class="hidden max-w-md mx-auto rounded-xl px-4 py-2 text-xs text-center border"
-    ></div>
-
-  <input type="hidden" id="discord_id" />
-  <input type="hidden" id="discord_name" />
-  <body class="min-h-screen bg-slate-950 text-slate-100">
-    <!-- 背景漸層 -->
-    <div
-      class="pointer-events-none fixed inset-0 opacity-60"
-      style="
-        background: radial-gradient(circle at 0% 0%, rgba(168, 85, 247, 0.35), transparent 55%),
-                    radial-gradient(circle at 100% 0%, rgba(59, 130, 246, 0.35), transparent 55%),
-                    radial-gradient(circle at 50% 100%, rgba(239, 68, 68, 0.25), transparent 55%);
-      "
-    ></div>
-
-    <div class="relative z-10 max-w-6xl mx-auto px-6 py-4 flex flex-col gap-4">
-      <!-- 頂部 Navbar -->
-      <header
-        class="flex items-center justify-between px-6 py-3 rounded-2xl bg-slate-950/80 border border-slate-800 shadow-[0_0_40px_rgba(15,23,42,0.9)]"
-      >
+  <body class="min-h-screen">
+    <div class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+      <!-- Header -->
+      <header class="glass rounded-2xl px-5 py-4 flex items-center justify-between relative overflow-visible z-50">
         <div class="flex items-center gap-3">
-          <div
-            class="w-8 h-8 rounded-xl bg-gradient-to-br from-fuchsia-500 to-sky-500 flex items-center justify-center text-xs font-bold"
-          >
-            RO
+          <a href="index.html" class="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-300 via-fuchsia-400 to-cyan-300 flex items-center justify-center text-slate-900 font-bold text-lg shadow-lg shadow-fuchsia-500/30">VE</a>
+          <div class="flex flex-col justify-center">
+            <div class="text-xs uppercase tracking-[0.08em] text-slate-300">RPG 裝備交易平台</div>
+            <div class="text-base font-semibold tracking-tight text-white">打怪・掉寶・自由交易</div>
           </div>
-          <div>
-            <div class="text-sm font-semibold tracking-wide">RO 道具交易所</div>
-            <div class="text-[11px] text-slate-400">
-              Virtual Item Exchange · Demo
+        </div>
+        <nav class="hidden md:flex items-center gap-6 text-sm text-slate-200">
+          <a class="text-cyan-200 font-semibold" href="index.html">首頁</a>
+          <a class="hover:text-white" href="#dungeon">地城</a>
+          <a class="hover:text-white" href="market.html">裝備市場</a>
+          <a class="hover:text-white" href="AboutPage.html">世界觀與玩法</a>
+        </nav>
+        <div class="flex items-center gap-3">
+          <div id="userMenuWrapper" class="relative hidden sm:block z-50 overflow-visible">
+            <button
+              id="userMenuButton"
+              class="group flex items-center gap-3 px-4 py-2 rounded-2xl bg-slate-900/70 border border-slate-700/70 text-slate-100 font-semibold shadow-lg hover:border-cyan-300/60 transition focus:outline-none focus:ring-1 focus:ring-cyan-300/60"
+            >
+              <span id="userMenuAvatar" class="w-8 h-8 rounded-full bg-slate-800/80 border border-slate-600/60 flex items-center justify-center text-sm text-slate-300">◎</span>
+              <span id="userMenuLabel">登入</span>
+              <span id="userMenuArrow" class="hidden text-xs text-slate-500 group-hover:text-cyan-200">▾</span>
+            </button>
+            <div
+              id="userDropdown"
+              class="hidden absolute right-0 mt-2 w-48 rounded-2xl border border-slate-800/80 bg-slate-900/95 shadow-2xl backdrop-blur-xl overflow-hidden z-50"
+            >
+              <a
+                id="personalCenterLink"
+                href="user_profiles.html"
+                class="block px-4 py-3 text-sm text-slate-100 hover:bg-slate-800/60"
+              >
+                個人中心
+              </a>
+              <button
+                id="logoutBtnDesktop"
+                class="w-full text-left px-4 py-3 text-sm text-rose-200 hover:bg-rose-500/10 border-t border-slate-800/60"
+              >
+                登出
+              </button>
+            </div>
+          </div>
+          <button id="mobileMenuBtn" class="md:hidden px-3 py-2 rounded-xl bg-slate-800 text-slate-200 border border-slate-700 hover:border-cyan-300/70 transition" aria-label="開啟選單">
+            <span class="block w-5 h-0.5 bg-slate-200 mb-1"></span>
+            <span class="block w-5 h-0.5 bg-slate-200 mb-1"></span>
+            <span class="block w-5 h-0.5 bg-slate-200"></span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Mobile menu -->
+      <div id="mobileMenu" class="md:hidden fixed inset-0 z-50 hidden">
+        <div id="mobileOverlay" class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"></div>
+        <div id="mobilePanel" class="relative ml-auto w-72 max-w-full h-full glass border-l border-slate-800 transform translate-x-full transition-transform duration-300 ease-in-out p-4 space-y-4 z-50">
+          <a id="loginLinkMobile" class="block text-slate-900 font-semibold bg-gradient-to-r from-fuchsia-400 to-cyan-300 rounded-xl px-3 py-2 text-center shadow-lg shadow-fuchsia-500/30" href="login.html">登入</a>
+
+          <div id="mobileUserCard" class="hidden rounded-2xl border border-slate-800 bg-slate-900/70 px-4 py-3 space-y-1">
+            <div class="text-xs text-slate-400">玩家</div>
+            <div id="mobileUserName" class="text-base font-semibold text-white">--</div>
+            <div id="mobileUserId" class="text-sm text-slate-300">ID #--</div>
+          </div>
+
+          <nav class="space-y-2 text-slate-100">
+            <a class="block hover:text-white" href="user_profiles.html">個人中心</a>
+            <a class="block hover:text-white" href="#dungeon">地城</a>
+            <a class="block hover:text-white" href="market.html">裝備市場</a>
+            <a class="block hover:text-white" href="AboutPage.html">世界觀與玩法</a>
+          </nav>
+
+          <button
+            id="logoutBtnMobile"
+            class="hidden w-full mt-auto py-3 rounded-2xl bg-gradient-to-r from-rose-500 via-orange-400 to-amber-300 text-slate-900 font-semibold shadow-lg shadow-rose-500/30 hover:opacity-95 transition focus:outline-none focus:ring-2 focus:ring-rose-300/70"
+          >
+            登出
+          </button>
+        </div>
+      </div>
+
+      <!-- Hero 區 -->
+      <section class="glass rounded-3xl p-8 relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-br from-fuchsia-500/10 via-cyan-400/10 to-amber-300/10 blur-3xl"></div>
+        <div class="relative z-10 grid lg:grid-cols-2 gap-8 items-center">
+          <div class="space-y-4">
+            <p class="text-sm text-cyan-200">冒險者交易大廳</p>
+            <h1 class="text-3xl md:text-4xl font-bold leading-tight text-white">
+              打怪、掉寶、鍛造、交易 — 你的冒險，由你主宰
+            </h1>
+            <p class="text-slate-300 text-sm md:text-base leading-relaxed">
+              這裡是結合 RPG 冒險與玩家市場的裝備交易平台。打怪刷副本取得掉落，鍛造強化你的武器與防具，並能像交易所一樣自由掛單、買賣裝備，打造專屬你的傳說角色。
+            </p>
+            <div class="flex flex-wrap gap-3 pt-2">
+              <a href="market.html" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-fuchsia-400 to-cyan-300 text-slate-900 font-semibold shadow-lg shadow-fuchsia-500/30 hover:scale-[1.02] transition">開始冒險</a>
+              <a href="#about" class="px-4 py-2.5 rounded-xl border border-slate-700 text-slate-100 hover:border-cyan-300/60">了解玩法</a>
             </div>
           </div>
         </div>
+      </section>
 
-        <button
-          id="loginButton"
-          class="px-5 py-2 rounded-full bg-gradient-to-r from-fuchsia-500 to-indigo-500 text-sm font-semibold shadow-lg shadow-fuchsia-500/50 hover:from-fuchsia-400 hover:to-indigo-400 transition"
-        >
-          登入
-        </button>
-      </header>
-
-      <!-- 主內容 -->
-      <main class="grid gap-6 lg:grid-cols-4">
-        <!-- ================= 左側：道具列表 ================= -->
-        <section
-          class="lg:col-span-1 rounded-3xl bg-slate-950/90 border border-slate-900/80 shadow-[0_0_60px_rgba(15,23,42,1)] flex flex-col"
-        >
-          <div class="px-5 pt-4 pb-2 border-b border-slate-800/80">
-            <div class="flex items-center justify-between">
-              <span class="text-sm font-semibold">道具列表</span>
-            </div>
-            <div class="mt-3 relative">
-              <span
-                class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-500"
-                >🔍</span
-              >
-              <input
-                id="itemSearch"
-                type="text"
-                placeholder="搜尋道具..."
-                class="w-full pl-8 pr-3 py-1.5 rounded-full bg-slate-900/80 border border-slate-700/70 text-xs focus:outline-none focus:ring-1 focus:ring-fuchsia-500/70"
-              />
-            </div>
+      <!-- 最新掛單 / 市場跑馬燈 -->
+      <section id="markets" class="glass rounded-2xl p-5 space-y-3">
+        <div class="flex items-center justify-between text-sm text-slate-200">
+          <div class="flex items-center gap-2">
+            <span class="text-amber-300 text-lg">⚔️</span>
+            <span class="bg-gradient-to-r from-amber-200 via-fuchsia-200 to-cyan-200 bg-clip-text text-transparent">
+              最新裝備掛單
+            </span>
           </div>
+          <a href="market.html" class="text-cyan-300 hover:text-white">前往裝備市場</a>
+        </div>
+        <div id="ticker" class="ticker relative overflow-hidden pt-1"></div>
+      </section>
 
-          <div id="itemList" class="flex-1 overflow-y-auto px-3 pb-4 pt-2 space-y-2 text-xs">
-            <!-- 道具項目由 JS 填入 -->
-          </div>
-        </section>
+      <!-- 玩法 / 特色區塊 -->
+      <section class="glass rounded-2xl p-6 space-y-4">
+        <h2 class="text-xl font-bold text-white">玩法特色</h2>
+        <ul class="text-slate-300 text-sm space-y-2">
+          <li>• 挑戰怪物、副本，蒐集稀有武器、防具與素材。</li>
+          <li>• 利用素材鍛造、強化與重鑄裝備，打造專屬 Build。</li>
+          <li>• 像交易所一樣掛單／吃單，自由買賣裝備與素材。</li>
+          <li>• 市場價格、成交紀錄、掉落來源一目了然，讓冒險更有策略感。</li>
+        </ul>
+      </section>
 
-        <!-- ================= 中間：Orderbook（賣單 / 買單） ================= -->
-        <section class="lg:col-span-2 flex flex-col gap-4">
-          <!-- 道具摘要 -->
-          <div
-            class="rounded-3xl bg-slate-950/90 border border-slate-900/80 px-6 py-4 flex items-center justify-between shadow-[0_0_50px_rgba(15,23,42,0.9)]"
-          >
-            <div>
-              <div class="text-[11px] text-slate-400 mb-1">當前道具</div>
-              <div id="selectedItemName" class="text-lg font-semibold">
-                尚未選擇道具
-              </div>
-            </div>
-            <div class="text-right">
-              <div class="text-[11px] text-slate-400 mb-1">最後成交價（示意）</div>
-              <div id="selectedItemPrice" class="text-base font-semibold text-amber-300">
-                —
-              </div>
-            </div>
-          </div>
+      <!-- 安全 / 交易 / 透明 三卡 -->
+      <section id="about" class="grid md:grid-cols-3 gap-4">
+        <!-- 安全保障 -->
+        <div class="glass rounded-2xl p-4 space-y-2">
+          <div class="w-10 h-10 rounded-xl bg-fuchsia-500/20 border border-fuchsia-400/40 text-fuchsia-200 flex items-center justify-center">🛡️</div>
+          <div class="text-lg font-semibold text-white">你的裝備，你的資產</div>
+          <p class="text-sm text-slate-300 leading-relaxed">
+            每一次怪物掉落、鍛造強化、玩家交易，都會完整記錄在系統中，避免裝備遺失或被竄改。你的虛擬裝備，就是你在這個世界的真正資產。
+          </p>
+        </div>
 
-          <!-- 賣單 (Asks) -->
-          <div
-            class="rounded-3xl bg-slate-950/90 border border-slate-900/80 px-6 py-4 shadow-[0_0_60px_rgba(15,23,42,0.9)]"
-          >
-            <div class="flex items-center justify-between mb-3">
-              <div class="flex items-center gap-2">
-                <div class="h-px w-6 bg-fuchsia-400/80 rounded-full"></div>
-                <span class="text-sm font-semibold text-fuchsia-200">賣單 (Asks)</span>
-              </div>
-            </div>
+        <!-- 快速撮合 -->
+        <div class="glass rounded-2xl p-4 space-y-2">
+          <div class="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-400/40 text-cyan-200 flex items-center justify-center">⚡</div>
+          <div class="text-lg font-semibold text-white">即時交易，毫秒撮合</div>
+          <p class="text-sm text-slate-300 leading-relaxed">
+            想換下一把武器或出清背包素材？掛單之後，系統會即時撮合買賣雙方，讓你不必苦等玩家在線，也能快速完成一筆好交易。
+          </p>
+        </div>
 
-            <div
-              class="grid grid-cols-3 text-[11px] text-slate-400 border-b border-slate-800 pb-1 mb-1"
-            >
-              <span>價格</span>
-              <span>數量</span>
-              <span class="text-right">賣家</span>
-            </div>
+        <!-- 透明公開 -->
+        <div class="glass rounded-2xl p-4 space-y-2">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-300/40 text-amber-200 flex items-center justify-center">📜</div>
+          <div class="text-lg font-semibold text-white">透明掉落率・公開行情</div>
+          <p class="text-sm text-slate-300 leading-relaxed">
+            每件裝備的來源、掉落副本、歷史成交價格一律公開；未來也可查詢怪物掉落表與稀有度，讓你在打怪與掛單時都有充足資訊可以決策。
+          </p>
+        </div>
+      </section>
 
-            <div id="asksList" class="space-y-1 max-h-48 overflow-y-auto text-xs">
-              <p class="text-slate-500 text-[11px]">
-                請先在左側選擇道具，這裡會顯示賣單。
-              </p>
-            </div>
-          </div>
-
-          <!-- 買單 (Bids) -->
-          <div
-            class="rounded-3xl bg-slate-950/90 border border-slate-900/80 px-6 py-4 shadow-[0_0_60px_rgba(15,23,42,0.9)]"
-          >
-            <div class="flex items-center justify-between mb-3">
-              <div class="flex items-center gap-2">
-                <div class="h-px w-6 bg-emerald-400/80 rounded-full"></div>
-                <span class="text-sm font-semibold text-emerald-200">買單 (Bids)</span>
-              </div>
-            </div>
-
-            <div
-              class="grid grid-cols-3 text-[11px] text-slate-400 border-b border-slate-800 pb-1 mb-1"
-            >
-              <span>價格</span>
-              <span>數量</span>
-              <span class="text-right">買家</span>
-            </div>
-
-            <div id="bidsList" class="space-y-1 max-h-48 overflow-y-auto text-xs">
-              <p class="text-slate-500 text-[11px]">
-                請先在左側選擇道具，這裡會顯示買單。
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <!-- ================= 右側：交易操作 + 帳戶資訊 ================= -->
-        <section class="lg:col-span-1 flex flex-col gap-4">
-          <!-- 交易操作 -->
-          <div
-            class="rounded-3xl bg-slate-950/90 border border-slate-900/80 px-6 py-5 shadow-[0_0_60px_rgba(15,23,42,0.9)]"
-          >
-            <div class="text-sm font-semibold text-center mb-4 text-fuchsia-100">
-              交易操作
-            </div>
-
-            <div class="space-y-3 text-xs">
-              <div>
-                <label class="block mb-1 text-slate-300">價格 (Z)</label>
-                <input
-                  type="number"
-                  id="price"
-                  min="0"
-                  step="1"
-                  class="w-full rounded-xl bg-slate-900/90 border border-slate-700/80 px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-fuchsia-500/70"
-                  placeholder="輸入價格..."
-                />
-              </div>
-
-              <div>
-                <label class="block mb-1 text-slate-300">數量</label>
-                <input
-                  type="number"
-                  id="qty"
-                  min="1"
-                  step="1"
-                  value="1"
-                  class="w-full rounded-xl bg-slate-900/90 border border-slate-700/80 px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-fuchsia-500/70"
-                  placeholder="輸入數量..."
-                />
-              </div>
-
-              <div class="flex items-center justify-between bg-slate-900/70 rounded-xl px-3 py-2">
-                <span class="text-slate-300 text-xs">總價：</span>
-                <span id="totalPrice" class="text-amber-300 font-semibold text-sm">—</span>
-              </div>
-
-              <div class="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  id="buyButton"
-                  class="flex-1 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-xs font-semibold shadow-md shadow-emerald-500/40 transition"
-                >
-                  買入
-                </button>
-                <button
-                  type="button"
-                  id="sellButton"
-                  class="flex-1 py-2 rounded-xl bg-rose-500 hover:bg-rose-400 text-xs font-semibold shadow-md shadow-rose-500/40 transition"
-                >
-                  賣出
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- 帳戶資訊 -->
-          <div
-            class="flex-1 rounded-3xl bg-slate-950/90 border border-slate-900/80 px-6 py-5 shadow-[0_0_60px_rgba(15,23,42,0.9)]"
-          >
-            <div class="text-sm font-semibold text-center mb-4">帳戶資訊</div>
-
-            <div id="accountInfoGuest" class="text-xs text-slate-400 text-center mt-4">
-              請先登入以查看您的掛單資訊。
-            </div>
-
-            <div id="accountInfo" class="hidden flex flex-col gap-3 text-xs">
-              <div>
-                <div class="text-[11px] text-slate-400">用戶</div>
-                <div
-                  id="accountUserLabel"
-                  class="mt-0.5 font-semibold text-slate-100 truncate"
-                ></div>
-              </div>
-              <!-- 新增餘額資訊 -->
-            <div class="border border-slate-800 rounded-xl p-2 bg-slate-900/60">
-              <div class="flex justify-between text-[11px] text-slate-400 mb-1">
-                <span>餘額</span>
-                <button
-                  id="topupButton"
-                  class="px-2 py-0.5 rounded-full bg-fuchsia-500/80 hover:bg-fuchsia-400 text-[11px] text-slate-50"
-                >
-                  儲值
-                </button>
-              </div>
-              <div class="flex justify-between text-[11px]">
-                <span class="text-slate-400">可用</span>
-                <span id="walletAvailable" class="text-emerald-300 font-semibold">0</span>
-              </div>
-              <div class="flex justify-between text-[11px]">
-                <span class="text-slate-400">凍結</span>
-                <span id="walletFrozen" class="text-amber-300 font-semibold">0</span>
-              </div>
-              <div class="flex justify-between text-[11px]">
-                <span class="text-slate-400">總額</span>
-                <span id="walletTotal" class="text-slate-100 font-semibold">0</span>
-              </div>
-            </div>
-              <div>
-                <div class="flex items-center justify-between mb-1">
-                  <span class="text-[11px] text-slate-400">我的掛單</span>
-                </div>
-                <div
-                  id="myOrders"
-                  class="space-y-1 max-h-40 overflow-y-auto border border-slate-800 rounded-xl p-2 bg-slate-900/60"
-                ></div>
-              </div>
-            </div>
-          </div>
-        </section>
-      </main>
+      <!-- Footer CTA -->
+      <footer class="glass rounded-2xl p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div>
+          <div class="text-sm text-slate-400">準備好踏入冒險世界了嗎？</div>
+          <div class="text-lg font-semibold text-white">從第一件裝備開始，打造你的專屬角色與交易風格。</div>
+        </div>
+        <a href="market.html" class="px-4 py-2 rounded-xl bg-gradient-to-r from-fuchsia-400 to-cyan-300 text-slate-900 font-semibold shadow-lg shadow-fuchsia-500/30 hover:scale-[1.02] transition">
+          立刻前往裝備市場
+        </a>
+      </footer>
     </div>
 
+    <!-- Scripts：沿用原本邏輯 -->
     <script>
-      // =======================
-      // 設定 API Base URL
-      // =======================
-      //const API_BASE = "http://127.0.0.1:8000"; // 改成你的 FastAPI / ngrok 網址
-      const API_BASE = "https://lilyana-nonsyntonic-marilu.ngrok-free.dev";
-      const NGROK_BYPASS_HEADER = { "ngrok-skip-browser-warning": "true" };
-      let currentUser = null;
-      let selectedItem = null;
+      const API_BASE = 'https://tapes-june-addresses-mount.trycloudflare.com';
+      const NGROK_BYPASS_HEADER = { 'ngrok-skip-browser-warning': 'true' };
 
-      // DOM
-      const messageBox = document.getElementById("message");
-      const loginButton = document.getElementById("loginButton");
-
-      const itemList = document.getElementById("itemList");
-      const itemSearch = document.getElementById("itemSearch");
-
-      const selectedItemName = document.getElementById("selectedItemName");
-      const selectedItemPrice = document.getElementById("selectedItemPrice");
-
-      const asksList = document.getElementById("asksList");
-      const bidsList = document.getElementById("bidsList");
-
-      const priceInput = document.getElementById("price");
-      const qtyInput = document.getElementById("qty");
-      const totalPriceSpan = document.getElementById("totalPrice");
-
-      const buyButton = document.getElementById("buyButton");
-      const sellButton = document.getElementById("sellButton");
-
-      const accountInfoGuest = document.getElementById("accountInfoGuest");
-      const accountInfo = document.getElementById("accountInfo");
-      const accountUserLabel = document.getElementById("accountUserLabel");
-      const myOrdersDiv = document.getElementById("myOrders");
-
-      // Discord inputs (在 form 裡)
-      const discordIdInput = document.getElementById("discord_id");
-      const discordNameInput = document.getElementById("discord_name");
-      const walletAvailable = document.getElementById("walletAvailable");
-      const walletFrozen = document.getElementById("walletFrozen");
-      const walletTotal = document.getElementById("walletTotal");
-      const topupButton = document.getElementById("topupButton");
-
-      // =======================
-      // Helper：訊息
-      // =======================
-      function showMessage(text, type = "success") {
-        messageBox.textContent = text;
-        messageBox.className =
-          "max-w-md mx-auto rounded-xl px-4 py-2 text-xs text-center border " +
-          (type === "success"
-            ? "bg-emerald-500/10 text-emerald-200 border-emerald-500/50"
-            : "bg-rose-500/10 text-rose-200 border-rose-500/50");
-      }
-      function clearMessage() {
-        messageBox.className = "hidden";
-        messageBox.textContent = "";
-      }
-
-      // =======================
-      // 登入 / 登出
-      // =======================
-      function renderAuthUI() {
-        if (!currentUser) {
-          loginButton.textContent = "登入";
-          loginButton.classList.remove("bg-emerald-500");
-          loginButton.classList.add("bg-gradient-to-r", "from-fuchsia-500", "to-indigo-500");
-          accountInfoGuest.classList.remove("hidden");
-          accountInfo.classList.add("hidden");
-
-          discordIdInput.disabled = false;
-          discordNameInput.disabled = false;
-          discordIdInput.value = "";
-          discordNameInput.value = "";
-
-          myOrdersDiv.innerHTML = "";
-        } else {
-          const label =
-            currentUser.discord_name && currentUser.discord_name.trim()
-              ? currentUser.discord_name
-              : currentUser.discord_id;
-
-          loginButton.textContent = label;
-          loginButton.className =
-            "px-5 py-2 rounded-full bg-emerald-500 hover:bg-emerald-400 text-sm font-semibold shadow-lg shadow-emerald-500/50 transition";
-
-          accountInfoGuest.classList.add("hidden");
-          accountInfo.classList.remove("hidden");
-          accountUserLabel.textContent = label;
-
-          discordIdInput.disabled = true;
-          discordNameInput.disabled = true;
-          discordIdInput.value = currentUser.discord_id;
-          discordNameInput.value = currentUser.discord_name || "";
-
-          loadMyOrders();
-          loadWallet(); 
+      async function fetchJSON(path, options = {}) {
+        const url = `${API_BASE || ''}${path}`;
+        const headers = { ...(options.headers || {}), ...NGROK_BYPASS_HEADER };
+        if (options.body && !(options.body instanceof FormData)) {
+          headers['Content-Type'] = 'application/json';
         }
-      }
-
-      loginButton.addEventListener("click", () => {
-        if (!currentUser) {
-          const discordId = window.prompt("請輸入 Discord ID（必填）");
-          if (!discordId) return;
-          const discordName = window.prompt("請輸入 Discord 暱稱（可留空）") || "";
-
-          currentUser = {
-            discord_id: discordId.trim(),
-            discord_name: discordName.trim(),
-          };
-          localStorage.setItem("virtual_exchange_user", JSON.stringify(currentUser));
-          renderAuthUI();
-        } else {
-          const ok = window.confirm("要登出目前帳號嗎？");
-          if (!ok) return;
-          currentUser = null;
-          localStorage.removeItem("virtual_exchange_user");
-          renderAuthUI();
-        }
-      });
-
-      // =======================
-      // 道具列表
-      // =======================
-      let allItems = [];
-
-      function renderItemList(filter = "") {
-        const q = filter.trim().toLowerCase();
-        itemList.innerHTML = "";
-        const filtered = allItems.filter((item) => {
-          if (!q) return true;
-          return (
-            item.name.toLowerCase().includes(q) ||
-            item.game.toLowerCase().includes(q) ||
-            String(item.id).includes(q)
-          );
+        const res = await fetch(url, {
+          method: options.method || 'GET',
+          headers,
+          body: options.body && !(options.body instanceof FormData) ? JSON.stringify(options.body) : options.body,
         });
+        const text = await res.text();
+        let data = null;
+        try { data = text ? JSON.parse(text) : null; } catch { /* ignore */ }
+        if (!res.ok) throw new Error((data && data.detail) || res.statusText || 'Request failed');
+        return data;
+      }
 
-        if (filtered.length === 0) {
-          itemList.innerHTML =
-            '<p class="text-slate-500 text-[11px] px-2 mt-2">找不到符合條件的道具。</p>';
+      let tickerLoaded = false;
+
+      const userMenuWrapper = document.getElementById('userMenuWrapper');
+      const userMenuButton = document.getElementById('userMenuButton');
+      const userMenuLabel = document.getElementById('userMenuLabel');
+      const userMenuAvatar = document.getElementById('userMenuAvatar');
+      const userMenuArrow = document.getElementById('userMenuArrow');
+      const userDropdown = document.getElementById('userDropdown');
+      const personalCenterLink = document.getElementById('personalCenterLink');
+      const mobileLoginLink = document.getElementById('loginLinkMobile');
+      const mobileLogoutBtn = document.getElementById('logoutBtnMobile');
+      const mobileUserCard = document.getElementById('mobileUserCard');
+      const mobileUserName = document.getElementById('mobileUserName');
+      const mobileUserId = document.getElementById('mobileUserId');
+
+      let cachedUser = null;
+      let dropdownTimer = null;
+
+      const guestButtonClass =
+        "flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-fuchsia-400 to-cyan-300 text-slate-900 font-semibold shadow-lg shadow-fuchsia-500/30 hover:scale-[1.02] transition";
+      const userButtonClass =
+        "flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900/70 border border-slate-700 text-slate-100 font-semibold shadow-lg hover:border-cyan-300/60 transition";
+
+      async function loadTicker() {
+        if (tickerLoaded) return;
+        const ticker = document.getElementById('ticker');
+        if (!ticker) return;
+        ticker.innerHTML = "<div class='text-slate-500 text-sm px-2'>載入中…</div>";
+        try {
+          const templates = await fetchJSON('/api/item-templates');
+          if (!Array.isArray(templates) || templates.length === 0) {
+            ticker.innerHTML = "<div class='text-slate-500 text-sm px-2'>目前沒有掛單</div>";
+            tickerLoaded = true;
+            return;
+          }
+          const entries = [];
+          for (const item of templates) {
+            if (entries.length >= 10) break;
+            const [asks, bids] = await Promise.all([
+              fetchJSON(`/api/orderbook/${item.id}?side=SELL`).catch(() => []),
+              fetchJSON(`/api/orderbook/${item.id}?side=BUY`).catch(() => []),
+            ]);
+            const take = (list, side) =>
+              (Array.isArray(list) ? list : [])
+                .slice(0, 3)
+                .map((o) => ({ side, price: Number(o.price), qty: Number(o.qty), name: item.name }));
+            entries.push(...take(asks, 'SELL'));
+            if (entries.length >= 10) break;
+            entries.push(...take(bids, 'BUY'));
+          }
+          const pills = entries.slice(0, 10).map((o) => {
+            const priceLabel = Number.isFinite(o.price) ? `${o.price.toLocaleString()} Z` : '—';
+            const qtyLabel = Number.isFinite(o.qty) ? ` 量: ${o.qty}` : '';
+            const sideLabel = o.side === 'SELL' ? '賣出' : '買入';
+            return `${o.name} ｜ ${sideLabel} ${priceLabel}${qtyLabel}`;
+          });
+          if (!pills.length) {
+            ticker.innerHTML = "<div class='text-slate-500 text-sm px-2'>目前沒有掛單</div>";
+            tickerLoaded = true;
+            return;
+          }
+          ticker.innerHTML = '';
+          const track = document.createElement('div');
+          track.className = 'ticker-track';
+          const doubled = pills.concat(pills);
+          doubled.forEach((text) => {
+            const pill = document.createElement('div');
+            pill.className = 'whitespace-nowrap px-4 py-2 rounded-full border border-slate-700 bg-slate-900/40 text-amber-200 text-sm';
+            pill.textContent = text;
+            track.appendChild(pill);
+          });
+          ticker.appendChild(track);
+          tickerLoaded = true;
+        } catch (err) {
+          ticker.innerHTML = "<div class='text-rose-400 text-sm px-2'>掛單載入失敗</div>";
+        }
+      }
+
+      function applyUserState() {
+        cachedUser = null;
+        try {
+          const raw = localStorage.getItem('virtual_exchange_user');
+          if (raw) cachedUser = JSON.parse(raw);
+        } catch {}
+        if (!cachedUser) {
+          clearUserState();
           return;
         }
+        const name = cachedUser.discord_name || cachedUser.email || cachedUser.discord_id || '已登入';
+        if (userMenuLabel) userMenuLabel.textContent = name;
+        if (userMenuAvatar) {
+          userMenuAvatar.textContent = (name || '用戶').trim().charAt(0) || '用';
+          userMenuAvatar.classList.remove('hidden');
+        }
+        if (userMenuButton) userMenuButton.className = userButtonClass;
+        if (userMenuArrow) userMenuArrow.classList.remove('hidden');
+        if (personalCenterLink) personalCenterLink.classList.remove('hidden');
+        if (mobileLoginLink) {
+          mobileLoginLink.classList.add('hidden');
+        }
+        if (mobileUserCard) mobileUserCard.classList.remove('hidden');
+        if (mobileUserName) mobileUserName.textContent = name || '用戶';
+        if (mobileUserId) mobileUserId.textContent = cachedUser.discord_id ? `ID #${cachedUser.discord_id}` : 'ID #-';
+        if (mobileLogoutBtn) mobileLogoutBtn.classList.remove('hidden');
+        hideUserDropdown();
+      }
 
-        filtered.forEach((item) => {
-          const row = document.createElement("button");
-          row.type = "button";
-          row.dataset.id = item.id;
-          row.className =
-            "w-full text-left rounded-2xl px-4 py-3 bg-slate-900/80 border border-slate-800/80 hover:border-fuchsia-500/60 hover:bg-slate-900/95 transition flex flex-col gap-0.5";
-          row.innerHTML = `
-            <div class="flex items-center justify-between">
-              <div class="text-[13px] font-semibold">${item.name}</div>
-              <div class="text-[11px] text-emerald-300">遊戲：${item.game}</div>
-            </div>
-            <div class="flex items-center justify-between text-[11px] text-slate-400">
-              <span>模板 ID：${item.id}</span>
-              <span>稀有度：${item.rarity}</span>
-            </div>
-          `;
-          row.addEventListener("click", () => {
-            selectItem(item);
-            // 高亮
-            Array.from(itemList.children).forEach((c) =>
-              c.classList.remove("ring-2", "ring-fuchsia-500/80")
-            );
-            row.classList.add("ring-2", "ring-fuchsia-500/80");
-          });
-          itemList.appendChild(row);
+      function clearUserState() {
+        cachedUser = null;
+        if (userMenuLabel) userMenuLabel.textContent = '登入';
+        if (userMenuAvatar) {
+          userMenuAvatar.textContent = '';
+          userMenuAvatar.classList.add('hidden');
+        }
+        if (userMenuButton) userMenuButton.className = guestButtonClass;
+        if (userMenuArrow) userMenuArrow.classList.add('hidden');
+        if (userDropdown) userDropdown.classList.add('hidden');
+        if (personalCenterLink) personalCenterLink.classList.add('hidden');
+        if (mobileLoginLink) {
+          mobileLoginLink.textContent = '登入';
+          mobileLoginLink.href = 'login.html';
+          mobileLoginLink.classList.remove('hidden');
+        }
+        if (mobileLogoutBtn) mobileLogoutBtn.classList.add('hidden');
+        if (mobileUserCard) mobileUserCard.classList.add('hidden');
+      }
+
+      function logoutUser() {
+        localStorage.removeItem('virtual_exchange_user');
+        clearUserState();
+        window.location.href = 'index.html';
+      }
+
+      function showUserDropdown() {
+        if (!cachedUser || !userDropdown) return;
+        if (dropdownTimer) clearTimeout(dropdownTimer);
+        userDropdown.classList.remove('hidden');
+      }
+
+      function hideUserDropdown() {
+        if (!userDropdown) return;
+        if (dropdownTimer) clearTimeout(dropdownTimer);
+        dropdownTimer = setTimeout(() => userDropdown.classList.add('hidden'), 120);
+      }
+
+      clearUserState();
+      applyUserState();
+      loadTicker();
+
+      const mobileBtn = document.getElementById('mobileMenuBtn');
+      const mobileMenu = document.getElementById('mobileMenu');
+      const mobilePanel = document.getElementById('mobilePanel');
+      const mobileOverlay = document.getElementById('mobileOverlay');
+      const logoutDesktop = document.getElementById('logoutBtnDesktop');
+      const logoutMobile = document.getElementById('logoutBtnMobile');
+
+      if (logoutDesktop) logoutDesktop.addEventListener('click', logoutUser);
+      if (logoutMobile) logoutMobile.addEventListener('click', logoutUser);
+
+      if (userMenuWrapper) {
+        userMenuWrapper.addEventListener('mouseenter', showUserDropdown);
+        userMenuWrapper.addEventListener('mouseleave', hideUserDropdown);
+      }
+
+      if (userMenuButton) {
+        userMenuButton.addEventListener('click', () => {
+          if (!cachedUser) {
+            window.location.href = 'login.html';
+            return;
+          }
+          if (userDropdown?.classList.contains('hidden')) {
+            showUserDropdown();
+          } else {
+            hideUserDropdown();
+          }
         });
       }
 
-      async function loadItemTemplates() {
-        console.log("[loadItemTemplates] start, API_BASE =", API_BASE);
-        try {
-            const res = await fetch(`${API_BASE}/api/item-templates`, {
-            headers: NGROK_BYPASS_HEADER,
-            });
-            console.log("[loadItemTemplates] status =", res.status);
-
-            const text = await res.text();
-            console.log("[loadItemTemplates] raw response =", text);
-
-            // 如果不是 JSON，就不要 parse，下方直接 return
-            let data;
-            try {
-            data = JSON.parse(text);
-            } catch (e) {
-            console.error("不是合法 JSON，可能是 HTML 錯誤頁");
-            showMessage("載入道具列表失敗：後端沒有回 JSON（可能是路徑或 ngrok 問題）", "error");
-            return;
-            }
-
-            if (!Array.isArray(data)) {
-            console.error("item-templates 回傳不是 array：", data);
-            throw new Error("API 回傳格式錯誤");
-            }
-
-            allItems = data;
-          renderItemList();
-          // 自動選第一個
-          if (data.length > 0) {
-            selectItem(data[0]);
-            const firstButton = itemList.querySelector("button");
-            if (firstButton) {
-              firstButton.classList.add("ring-2", "ring-fuchsia-500/80");
-            }
-          }
-        } catch (err) {
-          console.error("載入道具列表錯誤：", err);
-          showMessage("載入道具列表失敗，請確認後端是否啟動。", "error");
-        }
-      }
-
-      itemSearch.addEventListener("input", () => {
-        renderItemList(itemSearch.value);
-      });
-
-      function selectItem(item) {
-        selectedItem = item;
-        selectedItemName.textContent = item.name;
-        // 沒有實際價格，示意用：id * 1000
-        selectedItemPrice.textContent = `${(item.id * 1000).toLocaleString()} Z (示意)`;
-        loadOrderbook(item.id);
-      }
-
-      // =======================
-      // Orderbook
-      // =======================
-      async function loadOrderbook(itemId) {
-        await Promise.all([
-          loadOrderbookSide(itemId, "SELL", asksList),
-          loadOrderbookSide(itemId, "BUY", bidsList),
-        ]);
-      }
-
-      async function loadOrderbookSide(itemId, side, targetDiv) {
-        if (!itemId) {
-          targetDiv.innerHTML =
-            '<p class="text-slate-500 text-[11px]">請先選擇道具。</p>';
-          return;
-        }
-
-        try {
-          const res = await fetch(
-            `${API_BASE}/api/orderbook/${itemId}?side=${encodeURIComponent(side)}`,
-            {
-                headers: NGROK_BYPASS_HEADER,
-            }
-          );
-          if (!res.ok) {
-            throw new Error(await res.text());
-          }
-          const data = await res.json();
-          if (!Array.isArray(data)) throw new Error("orderbook 回傳不是陣列");
-
-          if (data.length === 0) {
-            const msg =
-              side === "SELL"
-                ? "目前沒有賣單，搶先掛第一筆吧！"
-                : "目前沒有買單，搶先開第一筆收購吧！";
-            targetDiv.innerHTML = `<p class="text-slate-500 text-[11px]">${msg}</p>`;
-            return;
-          }
-
-          targetDiv.innerHTML = "";
-          data.forEach((order) => {
-            const row = document.createElement("div");
-            row.className =
-              "grid grid-cols-3 items-center rounded-xl px-3 py-1.5 bg-slate-900/80 border border-slate-800/80 text-[11px]";
-            row.innerHTML = `
-              <div class="text-amber-300 font-semibold">
-                ${Number(order.price).toLocaleString()}
-              </div>
-              <div class="text-sky-300">${order.qty}</div>
-              <div class="text-right text-slate-400 truncate">
-                ${order.discord_name || order.discord_id}
-              </div>
-            `;
-            targetDiv.appendChild(row);
-          });
-        } catch (err) {
-          console.error("載入 orderbook 錯誤：", err);
-          targetDiv.innerHTML =
-            '<p class="text-rose-400 text-[11px]">載入掛單失敗。</p>';
-        }
-      }
-
-      // =======================
-      // 我的掛單
-      // =======================
-      async function loadMyOrders() {
-        if (!currentUser) return;
-        try {
-          const res = await fetch(
-            `${API_BASE}/api/orders/by-user/${encodeURIComponent(
-              currentUser.discord_id
-            )}`,
-            {
-                headers: NGROK_BYPASS_HEADER,
-            }
-          );
-          if (!res.ok) throw new Error(await res.text());
-          const data = await res.json();
-          if (!Array.isArray(data)) throw new Error("my-orders 回傳不是陣列");
-
-          if (data.length === 0) {
-            myOrdersDiv.innerHTML =
-              '<p class="text-slate-500 text-[11px]">目前沒有掛單。</p>';
-            return;
-          }
-
-          myOrdersDiv.innerHTML = "";
-          data.forEach((order) => {
-            const row = document.createElement("div");
-            row.className =
-              "flex items-center justify-between rounded-lg bg-slate-900/90 border border-slate-800/90 px-2 py-1";
-            row.innerHTML = `
-              <div class="text-[11px]">
-                <div>
-                  <span class="${
-                    order.side === "BUY" ? "text-emerald-300" : "text-rose-300"
-                  } font-semibold">
-                    ${order.side}
-                  </span>
-                  ｜ <span class="text-amber-300">${Number(
-                    order.price
-                  ).toLocaleString()}</span>
-                  ｜ <span class="text-sky-300">${order.qty}</span>
-                </div>
-                <div class="text-[10px] text-slate-500">
-                  item #${order.item_template_id} ｜ order #${order.id}
-                </div>
-              </div>
-            `;
-            myOrdersDiv.appendChild(row);
-          });
-        } catch (err) {
-          console.error("載入個人掛單錯誤：", err);
-          myOrdersDiv.innerHTML =
-            '<p class="text-rose-400 text-[11px]">載入個人掛單時發生錯誤。</p>';
-        }
-      }
-
-      // =======================
-      // 交易操作：計算總價 + 建立訂單
-      // =======================
-      function updateTotal() {
-        const p = Number(priceInput.value);
-        const q = Number(qtyInput.value);
-        if (!isNaN(p) && !isNaN(q) && q > 0) {
-          totalPriceSpan.textContent = `${(p * q).toLocaleString()} Z`;
-        } else {
-          totalPriceSpan.textContent = "—";
-        }
-      }
-
-      priceInput.addEventListener("input", updateTotal);
-      qtyInput.addEventListener("input", updateTotal);
-
-      async function submitOrder(side) {
-        clearMessage();
-
-        let discord_id = discordIdInput.value.trim();
-        let discord_name = discordNameInput.value.trim();
-
-        if (currentUser) {
-          discord_id = currentUser.discord_id;
-          discord_name = currentUser.discord_name || "";
-        }
-
-        if (!discord_id) {
-          showMessage("請登入後再操作。", "error");
-          return;
-        }
-        if (!selectedItem) {
-          showMessage("請先從左側選擇道具。", "error");
-          return;
-        }
-
-        const price = Number(priceInput.value);
-        const qty = Number(qtyInput.value);
-        if (isNaN(price) || price < 0) {
-          showMessage("價格格式不正確。", "error");
-          return;
-        }
-        if (isNaN(qty) || qty < 1) {
-          showMessage("數量格式不正確。", "error");
-          return;
-        }
-
-        const payload = {
-          discord_id,
-          discord_name: discord_name || null,
-          item_template_id: selectedItem.id,
-          side,
-          price,
-          qty,
-          note: null,
-        };
-
-        try {
-          const res = await fetch(`${API_BASE}/api/orders`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json",NGROK_BYPASS_HEADER, },
-            body: JSON.stringify(payload),
-          });
-          if (!res.ok) {
-            const body = await res.json().catch(() => ({}));
-            throw new Error(body.detail || "建立訂單失敗");
-          }
-          const data = await res.json();
-          showMessage(
-            `${side === "SELL" ? "掛賣" : "收購"}成功！訂單編號 #${data.id}`,
-            "success"
-          );
-
-          await loadOrderbook(selectedItem.id);
-          if (currentUser) await loadMyOrders();
-          updateTotal();
-        } catch (err) {
-          console.error("建立訂單錯誤：", err);
-          showMessage(err.message, "error");
-        }
-      }
-
-      buyButton.addEventListener("click", () => submitOrder("BUY"));
-      sellButton.addEventListener("click", () => submitOrder("SELL"));
-
-      // =======================
-      // 初始化
-      // =======================
-      const savedUser = localStorage.getItem("virtual_exchange_user");
-      if (savedUser) {
-        try {
-          currentUser = JSON.parse(savedUser);
-        } catch {
-          currentUser = null;
-        }
-      }
-      renderAuthUI();
-      loadItemTemplates();
-      async function loadWallet() {
-          if (!currentUser) return;
-
-          try {
-            const res = await fetch(
-              `${API_BASE}/api/wallet/${encodeURIComponent(currentUser.discord_id)}`,
-              { headers: NGROK_BYPASS_HEADER }
-            );
-            if (!res.ok) throw new Error(await res.text());
-            const data = await res.json();
-
-            const balance = Number(data.balance || 0);
-            const frozen = Number(data.frozen_balance || 0);
-            const available = balance - frozen;
-
-            walletAvailable.textContent = `${available.toLocaleString()} Z`;
-            walletFrozen.textContent = `${frozen.toLocaleString()} Z`;
-            walletTotal.textContent = `${balance.toLocaleString()} Z`;
-          } catch (err) {
-            console.error("載入錢包錯誤:", err);
-            walletAvailable.textContent = "—";
-            walletFrozen.textContent = "—";
-            walletTotal.textContent = "—";
-          }
-        }
-        topupButton.addEventListener("click", async () => {
-        if (!currentUser) {
-          showMessage("請先登入再儲值。", "error");
-          return;
-        }
-
-        const input = window.prompt("請輸入儲值金額（Z）：");
-        if (!input) return;
-
-        const amount = Number(input);
-        if (isNaN(amount) || amount <= 0) {
-          showMessage("儲值金額格式不正確。", "error");
-          return;
-        }
-
-        try {
-          const res = await fetch(`${API_BASE}/api/wallet/topup`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              ...NGROK_BYPASS_HEADER,
-            },
-            body: JSON.stringify({
-              discord_id: currentUser.discord_id,
-              amount,
-            }),
-          });
-          if (!res.ok) {
-            const txt = await res.text();
-            throw new Error(txt);
-          }
-          await res.json(); // 用不到內容也沒關係，主要是成功
-          showMessage(`儲值成功：${amount.toLocaleString()} Z`, "success");
-          loadWallet();
-        } catch (err) {
-          console.error("儲值錯誤：", err);
-          showMessage("儲值失敗，請稍後再試。", "error");
+      document.addEventListener('click', (e) => {
+        if (!userMenuWrapper) return;
+        if (!userMenuWrapper.contains(e.target)) {
+          hideUserDropdown();
         }
       });
 
+      if (mobileBtn && mobileMenu && mobilePanel) {
+        mobileBtn.addEventListener('click', () => {
+          mobileMenu.classList.toggle('hidden');
+          requestAnimationFrame(() => {
+            mobilePanel.classList.toggle('translate-x-0');
+            mobilePanel.classList.toggle('translate-x-full');
+          });
+        });
+        if (mobileOverlay) {
+          mobileOverlay.addEventListener('click', () => {
+            mobilePanel.classList.add('translate-x-full');
+            mobilePanel.classList.remove('translate-x-0');
+            setTimeout(() => mobileMenu.classList.add('hidden'), 200);
+          });
+        }
+      }
+
+      setInterval(loadTicker, 7000);
     </script>
   </body>
 </html>

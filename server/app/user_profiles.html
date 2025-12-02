@@ -1,0 +1,902 @@
+﻿<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>個人中心 | Virtual Exchange</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      :root {
+        --bg: #0b1020;
+        --panel: #0f162a;
+        --card: #11172a;
+        --accent: #c084fc;
+        --accent-2: #38bdf8;
+        --amber: #fbbf24;
+        --green: #34d399;
+        --muted: #94a3b8;
+      }
+      body {
+        font-family: "Manrope", "Space Grotesk", system-ui, -apple-system, sans-serif;
+        background:
+          radial-gradient(circle at 10% 20%, rgba(56, 189, 248, 0.12), transparent 26%),
+          radial-gradient(circle at 90% 10%, rgba(192, 132, 252, 0.14), transparent 25%),
+          radial-gradient(circle at 50% 90%, rgba(251, 191, 36, 0.12), transparent 30%),
+          linear-gradient(160deg, #090d1a 0%, #0c1224 45%, #0b1020 100%);
+        color: #e5e7eb;
+        min-height: 100vh;
+      }
+      .glass {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(16px);
+      }
+      .chip {
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      .grid-slot {
+        background: linear-gradient(145deg, rgba(17, 24, 39, 0.85), rgba(15, 23, 42, 0.75));
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 14px;
+        min-height: 82px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        color: #cbd5f5;
+        position: relative;
+        overflow: hidden;
+      }
+      .grid-slot::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, rgba(168, 85, 247, 0.12), rgba(56, 189, 248, 0.12));
+        opacity: 0;
+        transition: opacity 0.2s ease;
+      }
+      .grid-slot.active::after {
+        opacity: 1;
+      }
+      .grid-slot.selected {
+        border-color: #38bdf8;
+        box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.35), 0 10px 35px rgba(0, 0, 0, 0.35);
+      }
+      .grid-slot.equipped {
+        border-color: #fbbf24;
+        box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.4), 0 12px 40px rgba(251, 191, 36, 0.25);
+      }
+      .grid-slot .tag {
+        font-size: 12px;
+        color: #94a3b8;
+      }
+      .stat-pill {
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      .pill-tab {
+        transition: all 0.18s ease;
+      }
+      .pill-tab.active {
+        background: linear-gradient(90deg, #38bdf8, #c084fc);
+        color: #0b1020;
+        border-color: transparent;
+      }
+      .hero-card {
+        background: radial-gradient(circle at 30% 20%, rgba(120, 150, 255, 0.18), transparent 45%),
+          radial-gradient(circle at 70% 80%, rgba(120, 255, 210, 0.14), transparent 45%),
+          linear-gradient(145deg, #0c1324, #0b0f1f 45%, #0b0f1c);
+        border: 1px solid rgba(148, 163, 184, 0.12);
+        box-shadow: 0 18px 60px rgba(0, 0, 0, 0.45);
+      }
+      .hero-avatar {
+        width: 128px;
+        height: 128px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 30% 30%, rgba(96, 165, 250, 0.4), rgba(12, 26, 48, 0.9)),
+          radial-gradient(circle at 70% 70%, rgba(236, 72, 153, 0.35), rgba(12, 26, 48, 0.7));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        box-shadow: 0 8px 40px rgba(56, 189, 248, 0.25);
+      }
+      .lvl-pill {
+        display: inline-block;
+        padding: 6px 14px;
+        border-radius: 999px;
+        border: 1px solid rgba(56, 189, 248, 0.45);
+        background: linear-gradient(120deg, rgba(56, 189, 248, 0.15), rgba(168, 85, 247, 0.12));
+        color: #c7d2fe;
+      }
+      .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+      }
+      .stat-box {
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        border-radius: 16px;
+        background: linear-gradient(160deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+        padding: 10px;
+        min-height: 76px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      @media (max-width: 640px) {
+        .stat-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: radial-gradient(circle at 30% 20%, rgba(88, 28, 135, 0.22), rgba(0, 0, 0, 0.75));
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        z-index: 90;
+      }
+      .modal-overlay.active {
+        display: flex;
+      }
+      .modal-card {
+        width: min(480px, 100%);
+        background: linear-gradient(140deg, #0c1020, #0c1226 50%, #0a0f1b);
+        border: 1px solid rgba(99, 102, 241, 0.3);
+        border-radius: 18px;
+        box-shadow: 0 20px 70px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(56, 189, 248, 0.08);
+        padding: 18px;
+        color: #e2e8f0;
+      }
+      .modal-avatar {
+        width: 96px;
+        height: 96px;
+        border-radius: 22px;
+        background: radial-gradient(circle at 30% 30%, rgba(250, 204, 21, 0.28), rgba(30, 41, 59, 0.9));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 42px;
+        margin: 0 auto 10px;
+        border: 1px solid rgba(248, 250, 252, 0.12);
+        box-shadow: 0 12px 45px rgba(168, 85, 247, 0.3);
+      }
+      .modal-close {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        color: #e2e8f0;
+        border-radius: 10px;
+        width: 36px;
+        height: 36px;
+      }
+      .modal-desc {
+        background: rgba(148, 163, 184, 0.08);
+        border: 1px solid rgba(148, 163, 184, 0.14);
+        border-radius: 14px;
+        padding: 10px 12px;
+        font-size: 14px;
+        color: #cbd5e1;
+      }
+      .modal-stat-list {
+        border: 1px solid rgba(148, 163, 184, 0.16);
+        border-radius: 16px;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+        padding: 12px;
+        display: grid;
+        gap: 10px;
+      }
+      .btn-equip {
+        border: none;
+        transition: transform 0.08s ease;
+      }
+      .btn-equip:active {
+        transform: translateY(1px);
+      }
+    </style>
+  </head>
+  <body class="pb-10">
+    <div class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+      <header class="glass rounded-2xl px-5 py-4 flex items-center justify-between relative overflow-visible z-40">
+        <div class="flex items-center gap-3">
+          <a href="index.html" class="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-300 via-fuchsia-400 to-cyan-300 flex items-center justify-center text-slate-900 font-bold text-lg shadow-lg shadow-fuchsia-500/30">VE</a>
+          <div class="flex flex-col justify-center">
+            <div class="text-xs uppercase tracking-[0.08em] text-slate-300">RPG 裝備交易平台</div>
+            <div class="text-base font-semibold tracking-tight text-white">打怪・掉寶・自由交易</div>
+          </div>
+        </div>
+        <nav class="hidden md:flex items-center gap-6 text-sm text-slate-200">
+          <a class="hover:text-white" href="index.html">首頁</a>
+          <a class="text-cyan-200 font-semibold" href="#dungeon">地城</a>
+          <a class="text-cyan-200 font-semibold" href="market.html">裝備市場</a>
+          <a class="hover:text-white" href="AboutPage.html">世界觀與玩法</a>
+        </nav>
+        <div class="flex items-center gap-3">
+          <div id="userMenuWrapper" class="relative hidden sm:block z-50 overflow-visible">
+            <button
+              id="logoutBtnDesktop"
+              class="group flex items-center justify-center px-5 py-2.5 rounded-2xl bg-gradient-to-r from-rose-500 via-orange-400 to-amber-300 text-slate-900 font-semibold shadow-lg shadow-rose-500/30 hover:opacity-95 transition focus:outline-none focus:ring-2 focus:ring-rose-300/70"
+            >
+              <span>登出</span>
+            </button>
+          </div>
+          <button id="mobileMenuBtn" class="md:hidden px-3 py-2 rounded-xl bg-slate-800 text-slate-200 border border-slate-700 hover:border-cyan-300/70 transition" aria-label="Toggle menu">
+            <span class="block w-5 h-0.5 bg-slate-200 mb-1"></span>
+            <span class="block w-5 h-0.5 bg-slate-200 mb-1"></span>
+            <span class="block w-5 h-0.5 bg-slate-200"></span>
+          </button>
+        </div>
+      </header>
+      <div id="mobileMenu" class="md:hidden fixed inset-0 z-50 hidden">
+        <div id="mobileOverlay" class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"></div>
+        <div id="mobilePanel" class="relative ml-auto w-72 max-w-full h-full glass border-l border-slate-800 transform translate-x-full transition-transform duration-300 ease-in-out p-4 space-y-4 z-50">
+          <div id="mobileUserCard" class="hidden rounded-2xl border border-slate-800 bg-slate-900/70 px-4 py-3 space-y-1">
+            <div class="text-xs text-slate-400">玩家</div>
+            <div id="mobileUserName" class="text-base font-semibold text-white">--</div>
+            <div id="mobileUserId" class="text-sm text-slate-300">ID #--</div>
+          </div>
+          <nav class="space-y-2 text-slate-100">
+            <a class="block hover:text-white" href="index.html">首頁</a>
+            <a class="block hover:text-white" href="#dungeon">地城</a>
+            <a class="block hover:text-white" href="market.html">裝備市場</a>
+            <a class="block hover:text-white" href="AboutPage.html">世界觀與玩法</a>
+          </nav>
+          <button
+            id="logoutBtnMobile"
+            class="w-full mt-auto py-3 rounded-2xl bg-gradient-to-r from-rose-500 via-orange-400 to-amber-300 text-slate-900 font-semibold shadow-lg shadow-rose-500/30 hover:opacity-95 transition focus:outline-none focus:ring-2 focus:ring-rose-300/70"
+          >
+            登出
+          </button>
+        </div>
+      </div>
+
+      <section class="glass rounded-3xl p-5 md:p-6 space-y-4">
+        <div class="grid lg:grid-cols-3 gap-4 items-center">
+          <div class="flex items-center gap-4 bg-slate-900/50 border border-slate-800 rounded-2xl px-4 py-4">
+            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-fuchsia-500 via-violet-500 to-sky-400 flex items-center justify-center text-white text-3xl shadow-lg shadow-fuchsia-500/30">
+              <span aria-hidden="true">👤</span>
+            </div>
+            <div class="space-y-1">
+              <div id="playerName" class="text-lg font-semibold text-white">玩家</div>
+              <div class="text-sm text-slate-400">ID: <span id="playerId">-</span></div>
+              <div class="flex items-center gap-2 text-sm text-cyan-200">
+                <span class="text-cyan-300">🛡</span>
+                <span>Lv.<span id="playerLevel">-</span></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-slate-900/40 border border-slate-800 rounded-2xl px-4 py-4">
+            <div class="flex items-center justify-between text-sm text-slate-300">
+              <div class="flex items-center gap-2">
+                <span class="text-emerald-300">📈</span>
+                <span>交易等級</span>
+              </div>
+              <span id="progressPct" class="text-slate-400">0%</span>
+            </div>
+            <div id="tradeTitle" class="text-base font-semibold text-emerald-300 mt-1">新手交易者</div>
+            <div class="mt-3 h-2.5 rounded-full bg-slate-800 overflow-hidden border border-slate-700">
+              <div id="progressBar" class="h-full bg-gradient-to-r from-emerald-400 via-cyan-400 to-sky-300" style="width:0%"></div>
+            </div>
+          </div>
+
+          <div class="bg-slate-900/40 border border-slate-800 rounded-2xl px-4 py-4 text-right">
+            <div class="flex items-center gap-2 text-sm text-slate-300">
+              <span class="text-amber-300">👛</span>
+              <span>資產</span>
+            </div>
+            <div class="mt-3 space-y-1">
+              <div class="text-sm text-slate-400">金幣</div>
+              <div id="walletBalance" class="text-xl font-semibold text-amber-300 ">0 Z</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="glass rounded-3xl p-5 md:p-6 space-y-5">
+        <div class="flex items-center gap-3">
+                    <button id="tabEquip" class="pill-tab active px-4 py-2 rounded-xl border border-slate-700 text-sm font-semibold">裝備</button>
+        </div>
+
+        <div class="grid lg:grid-cols-3 gap-5">
+          <div class="rounded-2xl bg-slate-900/50 border border-slate-800 p-4 space-y-3">
+            <div class="flex items-center justify-between text-slate-300 text-sm">
+              <span class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-cyan-300"></span>
+                裝備欄
+              </span>
+              <span id="equipCount" class="text-slate-500 text-xs">0/8</span>
+            </div>
+            <div id="equipGrid" class="grid grid-cols-2 gap-3"></div>
+          </div>
+
+          <div class="hero-card rounded-2xl p-6 flex flex-col items-center gap-4">
+            <div class="hero-avatar">
+              <span class="text-5xl" aria-label="avatar">🧙‍♂️</span>
+            </div>
+            <div class="text-center space-y-1">
+              <div class="text-xs text-slate-300">角色等級</div>
+              <div id="heroLevel" class="lvl-pill text-sm font-semibold">Lv.-</div>
+            </div>
+            <div class="w-full space-y-2">
+              <div class="flex items-center justify-between text-xs text-slate-300">
+                <span>EXP</span>
+                <span id="expLabel" class="text-slate-200">--</span>
+              </div>
+              <div class="h-2.5 rounded-full bg-slate-800/80 overflow-hidden border border-slate-700/70">
+                <div id="expBar" class="h-full bg-gradient-to-r from-cyan-400 via-blue-400 to-amber-300" style="width:0%"></div>
+              </div>
+            </div>
+            <div class="stat-grid w-full text-center pt-2">
+              <div class="stat-box">
+                <div class="text-xs text-slate-300">攻擊</div>
+                <div id="statAtk" class="text-xl font-semibold text-amber-200">-</div>
+              </div>
+              <div class="stat-box">
+                <div class="text-xs text-slate-300">防禦</div>
+                <div id="statDef" class="text-xl font-semibold text-cyan-200">-</div>
+              </div>
+              <div class="stat-box">
+                <div class="text-xs text-slate-300">敏捷</div>
+                <div id="statAgi" class="text-xl font-semibold text-fuchsia-200">-</div>
+              </div>
+              <div class="stat-box">
+                <div class="text-xs text-slate-300">智力</div>
+                <div id="statInt" class="text-xl font-semibold text-indigo-200">-</div>
+              </div>
+              <div class="stat-box">
+                <div class="text-xs text-slate-300">幸運</div>
+                <div id="statLuk" class="text-xl font-semibold text-pink-200">-</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="rounded-2xl bg-slate-900/50 border border-slate-800 p-4 space-y-4">
+            <div class="flex items-center justify-between text-slate-300 text-sm">
+              <span class="flex items-center gap-2">
+                <span class="text-pink-300 text-lg">🎒</span>
+                背包
+              </span>
+              <span id="bagCount" class="text-xs text-slate-500">0 / 500</span>
+            </div>
+            <div id="bagGrid" class="grid grid-cols-3 sm:grid-cols-4 gap-3"></div>
+            <div class="grid grid-cols-2 gap-3 pt-2">
+              <button class="py-2.5 rounded-xl bg-gradient-to-r from-fuchsia-500 to-cyan-400 text-slate-900 font-semibold shadow-lg shadow-fuchsia-500/30 hover:scale-[1.01] transition text-sm">
+                分解
+              </button>
+              <button class="py-2.5 rounded-xl bg-gradient-to-r from-emerald-400 to-lime-300 text-slate-900 font-semibold shadow-lg shadow-emerald-500/30 hover:scale-[1.01] transition text-sm">
+                販售
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div id="equipModal" class="modal-overlay">
+      <div class="modal-card relative">
+        <div class="flex justify-end">
+          <button id="equipModalClose" class="modal-close">✕</button>
+        </div>
+        <div class="modal-avatar">💍</div>
+        <div class="text-center space-y-1">
+          <div id="equipModalName" class="text-lg font-semibold text-white">裝備名稱</div>
+          <div class="text-sm text-slate-300">
+            <span id="equipModalSlot">-</span>
+            <span class="mx-2 text-slate-500">•</span>
+            <span id="equipModalLevel">Lv.-</span>
+          </div>
+          <div id="equipModalRarity" class="text-xs inline-block px-3 py-1 rounded-full border border-slate-700 bg-slate-800/70 text-slate-200">
+            稀有度
+          </div>
+        </div>
+        <div class="mt-4 modal-stat-list" id="equipModalStats"></div>
+        <div class="mt-5 grid grid-cols-2 gap-3">
+          <button id="equipModalAction" class="btn-equip py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-orange-400 text-slate-900 font-semibold shadow-lg shadow-rose-500/30">裝備</button>
+          <button class="btn-equip py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-fuchsia-400 text-slate-100 font-semibold shadow-lg shadow-indigo-500/30">強化</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const API_BASE = "https://tapes-june-addresses-mount.trycloudflare.com";
+      const NGROK_BYPASS_HEADER = { "ngrok-skip-browser-warning": "true" };
+      const LEVEL_UP_EXP = 100;
+
+      const logoutBtnDesktop = document.getElementById("logoutBtnDesktop");
+      const logoutBtnMobile = document.getElementById("logoutBtnMobile");
+      const mobileMenuBtn = document.getElementById("mobileMenuBtn");
+      const mobileMenu = document.getElementById("mobileMenu");
+      const mobilePanel = document.getElementById("mobilePanel");
+      const mobileOverlay = document.getElementById("mobileOverlay");
+      const mobileUserCard = document.getElementById("mobileUserCard");
+      const mobileUserName = document.getElementById("mobileUserName");
+      const mobileUserId = document.getElementById("mobileUserId");
+      const playerName = document.getElementById("playerName");
+      const playerId = document.getElementById("playerId");
+      const playerLevel = document.getElementById("playerLevel");
+      const heroLevel = document.getElementById("heroLevel");
+      const progressPct = document.getElementById("progressPct");
+      const progressBar = document.getElementById("progressBar");
+      const tradeTitle = document.getElementById("tradeTitle");
+      const walletBalance = document.getElementById("walletBalance");
+      const walletFrozen = document.getElementById("walletFrozen");
+      const expLabel = document.getElementById("expLabel");
+      const expBar = document.getElementById("expBar");
+      const statAtk = document.getElementById("statAtk");
+      const statDef = document.getElementById("statDef");
+      const statAgi = document.getElementById("statAgi");
+      const statInt = document.getElementById("statInt");
+      const statLuk = document.getElementById("statLuk");
+      const equipGrid = document.getElementById("equipGrid");
+      const bagGrid = document.getElementById("bagGrid");
+      const equipCount = document.getElementById("equipCount");
+      const bagCount = document.getElementById("bagCount");
+      const tabEquip = document.getElementById("tabEquip");
+      const equipModal = document.getElementById("equipModal");
+      const equipModalClose = document.getElementById("equipModalClose");
+      const equipModalName = document.getElementById("equipModalName");
+      const equipModalSlot = document.getElementById("equipModalSlot");
+      const equipModalLevel = document.getElementById("equipModalLevel");
+      const equipModalRarity = document.getElementById("equipModalRarity");
+      const equipModalDesc = document.getElementById("equipModalDesc");
+      const equipModalStats = document.getElementById("equipModalStats");
+      const equipModalAction = document.getElementById("equipModalAction");
+      const equipModalAvatar = document.querySelector("#equipModal .modal-avatar");
+
+      let currentUser = null;
+      let profile = null;
+      let wallet = null;
+      let inventory = [];
+      let selectedBagItemId = null;
+      let equippedSlots = new Array(8).fill(null);
+      let currentModalItem = null;
+
+      function ensureUser() {
+        try {
+          const raw = localStorage.getItem("virtual_exchange_user");
+          if (raw) currentUser = JSON.parse(raw);
+        } catch {
+          currentUser = null;
+        }
+        if (!currentUser) {
+          window.location.href = "login.html";
+        }
+      }
+
+      async function fetchJSON(path, options = {}) {
+        const url = `${API_BASE || ""}${path}`;
+        const headers = { ...(options.headers || {}), ...NGROK_BYPASS_HEADER };
+        if (options.body && !(options.body instanceof FormData)) {
+          headers["Content-Type"] = "application/json";
+        }
+        const res = await fetch(url, {
+          method: options.method || "GET",
+          headers,
+          body: options.body && !(options.body instanceof FormData) ? JSON.stringify(options.body) : options.body,
+        });
+        const text = await res.text();
+        let data = null;
+        try {
+          data = text ? JSON.parse(text) : null;
+        } catch {
+          throw new Error("伺服器回傳格式錯誤");
+        }
+        if (!res.ok) {
+          const detail = data?.detail;
+          const err = new Error((detail && detail.message) || detail || res.statusText || "Request failed");
+          err.code = detail?.code;
+          throw err;
+        }
+        return data;
+      }
+
+      function normalizeInventoryItem(raw = {}) {
+        const template = raw.item_template || {};
+        return {
+          id: raw.id,
+          name: raw.name || raw.item_name || template.name || "未鑑定物品",
+          qty: Number(raw.qty) || 1,
+          rarity: (template.rarity || "COMMON").toUpperCase(),
+          game: template.game || "",
+          slot_type: (template.slot_type || raw.slot_type || "MISC").toUpperCase(),
+          initial_price: Number(template.initial_price || raw.initial_price || 0),
+          stat_attack: Number(template.stat_attack || raw.stat_attack || 0),
+          stat_defense: Number(template.stat_defense || raw.stat_defense || 0),
+          stat_agility: Number(template.stat_agility || raw.stat_agility || 0),
+          stat_intelligence: Number(template.stat_intelligence || raw.stat_intelligence || 0),
+          stat_luck: Number(template.stat_luck || raw.stat_luck || 0),
+
+          acquired_at: raw.acquired_at,
+          level: raw.level || 1,
+        };
+      }
+
+      function rarityClass(rarity) {
+        switch ((rarity || "").toUpperCase()) {
+          case "LEGENDARY":
+            return "text-amber-300";
+          case "EPIC":
+            return "text-fuchsia-200";
+          case "RARE":
+            return "text-cyan-200";
+          default:
+            return "text-slate-200";
+        }
+      }
+
+      function slotLabel(slot) {
+        switch ((slot || "").toUpperCase()) {
+          case "WEAPON":
+            return "武器";
+          case "SHIELD":
+            return "盾牌";
+          case "ARMOR":
+            return "鎧甲";
+          case "HEAD":
+            return "頭飾";
+          case "RING":
+            return "戒指";
+          case "ACCESSORY":
+            return "飾品";
+          default:
+            return "其他";
+        }
+      }
+
+      function slotIcon(slot) {
+        switch ((slot || "").toUpperCase()) {
+          case "WEAPON":
+            return "🗡️";
+          case "SHIELD":
+            return "🛡️";
+          case "ARMOR":
+            return "🦺";
+          case "HEAD":
+            return "🎩";
+          case "RING":
+            return "💍";
+          case "ACCESSORY":
+            return "✨";
+          default:
+            return "🎁";
+        }
+      }
+
+      function rarityLabel(rarity) {
+        switch ((rarity || "").toUpperCase()) {
+          case "LEGENDARY":
+            return "傳說";
+          case "EPIC":
+            return "史詩";
+          case "RARE":
+            return "稀有";
+          case "UNCOMMON":
+            return "高級";
+          default:
+            return "普通";
+        }
+      }
+
+      function renderEquipModal(item) {
+        if (!equipModal) return;
+        equipModal.classList.add("active");
+        currentModalItem = item;
+        const icon = slotIcon(item.slot_type);
+        if (equipModalAvatar) equipModalAvatar.textContent = icon;
+        equipModalName.textContent = item.name || "未鑑定物品";
+        equipModalSlot.textContent = slotLabel(item.slot_type);
+        equipModalLevel.textContent = `Lv.${item.level || 1}`;
+        equipModalRarity.textContent = rarityLabel(item.rarity);
+        if (equipModalAction) {
+          const equipped = equippedSlots.some((eq) => eq && eq.id === item.id);
+          equipModalAction.textContent = equipped ? "解除裝備" : "裝備";
+        }
+        equipModalStats.innerHTML = "";
+        const statDefs = [
+          { key: "stat_attack", label: "攻擊", color: "text-rose-300" },
+          { key: "stat_defense", label: "防禦", color: "text-cyan-300" },
+          { key: "stat_agility", label: "敏捷", color: "text-fuchsia-200" },
+          { key: "stat_intelligence", label: "智力", color: "text-indigo-200" },
+          { key: "stat_luck", label: "幸運", color: "text-amber-200" },
+        ];
+        const fragment = document.createDocumentFragment();
+        let hasStat = false;
+        statDefs.forEach((def) => {
+          const value = Number(item[def.key] || 0);
+          if (!value) return;
+          hasStat = true;
+          const row = document.createElement("div");
+          row.className = "flex items-center justify-between text-sm";
+          row.innerHTML = `
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-slate-600"></span>
+              <span class="text-slate-200">${def.label}</span>
+            </div>
+            <span class="font-semibold ${def.color}">+${value}</span>
+          `;
+          fragment.appendChild(row);
+        });
+        if (!hasStat) {
+          const empty = document.createElement("div");
+          empty.className = "text-center text-slate-400 text-sm";
+          empty.textContent = "暫無屬性加成";
+          fragment.appendChild(empty);
+        }
+        equipModalStats.appendChild(fragment);
+      }
+
+      function closeEquipModal() {
+        if (equipModal) equipModal.classList.remove("active");
+      }
+
+      function equipItem(item) {
+        const idx = EQUIP_SLOTS.findIndex(
+          (slot, i) => slot.slot_type === item.slot_type && (!equippedSlots[i] || equippedSlots[i].id === item.id)
+        );
+        if (idx === -1) {
+          alert("此類別已無空欄位");
+          return;
+        }
+        equippedSlots[idx] = item;
+        renderEquipUI(equippedSlots);
+        persistEquipment().catch(() => {});
+      }
+
+      function unequipItem(item) {
+        const idx = equippedSlots.findIndex((eq) => eq && eq.id === item.id);
+        if (idx >= 0) {
+          equippedSlots[idx] = null;
+          renderEquipUI(equippedSlots);
+          persistEquipment().catch(() => {});
+        }
+      }
+
+      function renderProfileUI() {
+        if (!profile) return;
+        const name = profile.discord_name || profile.username || profile.email || "PLAYER";
+        playerName.textContent = name;
+        playerId.textContent = profile.discord_id || "-";
+        playerLevel.textContent = profile.level ?? "-";
+        heroLevel.textContent = `Lv.${profile.level ?? "-"}`;
+        const exp = Number(profile.exp || 0);
+        const pct = Math.min(100, (exp / LEVEL_UP_EXP) * 100);
+        expLabel.textContent = `${exp} / ${LEVEL_UP_EXP}`;
+        expBar.style.width = `${pct}%`;
+        const tradePct = Math.min(100, pct);
+        progressPct.textContent = `${tradePct.toFixed(0)}%`;
+        progressBar.style.width = `${tradePct}%`;
+        tradeTitle.textContent = tradePct >= 66 ? "專業交易者" : tradePct >= 33 ? "中級交易者" : "新手交易者";
+        statAtk.textContent = profile.stat_attack ?? 0;
+        statDef.textContent = profile.stat_defense ?? 0;
+        statAgi.textContent = profile.stat_agility ?? 0;
+        statInt.textContent = profile.stat_int ?? 0;
+        statLuk.textContent = profile.stat_luk ?? 0;
+        if (mobileUserCard) {
+          mobileUserCard.classList.remove("hidden");
+          if (mobileUserName) mobileUserName.textContent = name || "玩家";
+          if (mobileUserId) mobileUserId.textContent = profile.discord_id ? `ID #${profile.discord_id}` : "ID #-";
+        }
+      }
+
+      function renderWalletUI() {
+        if (!wallet) return;
+        const balance = Number(wallet.balance || 0);
+        const frozen = Number(wallet.frozen_balance || 0);
+        walletBalance.textContent = balance.toLocaleString() + " Z";
+        walletFrozen.textContent = frozen.toLocaleString();
+      }
+
+      const EQUIP_SLOTS = [
+        { key: "weapon", label: "武器", slot_type: "WEAPON" },
+        { key: "shield", label: "盾牌", slot_type: "SHIELD" },
+        { key: "armor", label: "鎧甲", slot_type: "ARMOR" },
+        { key: "cloak", label: "披風", slot_type: "CLOAK" },
+        { key: "head", label: "頭飾", slot_type: "HEAD" },
+        { key: "ring", label: "戒指", slot_type: "RING" },
+        { key: "acc1", label: "飾品1", slot_type: "ACCESSORY" },
+        { key: "acc2", label: "飾品2", slot_type: "ACCESSORY" },
+      ];
+
+      function buildEquippedFromInventory(items) {
+        const used = new Set();
+        return EQUIP_SLOTS.map((slot) => {
+          const found = items.find((it) => !used.has(it.id) && it.slot_type === slot.slot_type);
+          if (found) used.add(found.id);
+          return found || null;
+        });
+      }
+
+      function renderEquipUI(items) {
+        const grid = document.createDocumentFragment();
+        EQUIP_SLOTS.forEach((slot, idx) => {
+          const node = document.createElement("div");
+          node.className = "grid-slot" + (items[idx] ? " active" : "");
+          const title = document.createElement("div");
+          title.className = `text-sm font-semibold ${rarityClass(items[idx]?.rarity)}`;
+          title.textContent = items[idx]?.name || slot.label;
+          const lvl = document.createElement("div");
+          lvl.className = "tag";
+          lvl.textContent = items[idx] ? `Lv.${items[idx].level || 1}` : "未裝備";
+          node.append(title, lvl);
+          grid.appendChild(node);
+        });
+        equipGrid.innerHTML = "";
+        equipGrid.appendChild(grid);
+        equipCount.textContent = `${items.filter(Boolean).length} / ${EQUIP_SLOTS.length}`;
+      }
+
+      function renderBagUI(list) {
+        const maxSlots = 12;
+        const filled = list.slice(0, maxSlots);
+        const fragment = document.createDocumentFragment();
+        filled.forEach((item) => {
+          const cell = document.createElement("div");
+          const isSelected = selectedBagItemId === item.id;
+          const isEquipped = equippedSlots.some((eq) => eq && eq.id === item.id);
+          cell.className = "grid-slot active" + (isSelected ? " selected" : "") + (isEquipped ? " equipped" : "");
+          const name = document.createElement("div");
+          name.className = `text-sm font-semibold ${rarityClass(item.rarity)}`;
+          name.textContent = item.name || "道具";
+          const qty = document.createElement("div");
+          qty.className = "tag";
+          qty.textContent = `x${item.qty || 1}`;
+          const meta = document.createElement("div");
+          meta.className = "tag";
+          meta.textContent = item.slot_type ? `類別：${slotLabel(item.slot_type)}` : "";
+          cell.append(name, qty, meta);
+          cell.addEventListener("click", () => {
+            selectedBagItemId = selectedBagItemId === item.id ? null : item.id;
+            renderBagUI(inventory);
+            renderEquipModal(item);
+          });
+          fragment.appendChild(cell);
+        });
+        for (let i = filled.length; i < maxSlots; i++) {
+          const empty = document.createElement("div");
+          empty.className = "grid-slot";
+          empty.innerHTML = '<div class="text-slate-500 text-sm">空格</div>';
+          fragment.appendChild(empty);
+        }
+        bagGrid.innerHTML = "";
+        bagGrid.appendChild(fragment);
+        const totalQty = list.reduce((s, it) => s + Number(it.qty || 0), 0);
+        bagCount.textContent = `${totalQty} / 500`;
+      }
+
+      async function loadProfile() {
+        if (!currentUser) return;
+        profile = await fetchJSON(`/api/users/${encodeURIComponent(currentUser.discord_id)}`);
+        renderProfileUI();
+      }
+
+      async function loadWallet() {
+        if (!currentUser) return;
+        wallet = await fetchJSON(`/api/wallet/${encodeURIComponent(currentUser.discord_id)}`);
+        renderWalletUI();
+      }
+
+      async function loadInventory() {
+        if (!currentUser) return;
+        const summary = await fetchJSON(`/api/inventory/${encodeURIComponent(currentUser.discord_id)}/summary`);
+        const items = Array.isArray(summary?.items) ? summary.items : [];
+        const normalized = items
+          .map((it) => normalizeInventoryItem(it))
+          .filter((it) => (it.qty || 0) > 0);
+        inventory = normalized;
+        if (profile) {
+          const mapped = EQUIP_SLOTS.map((slot) => {
+            const idKey = `equip_${slot.key}_id`;
+            const targetId = profile[idKey];
+            return targetId ? normalized.find((it) => it.id === targetId) || null : null;
+          });
+          const allNull = mapped.every((x) => !x);
+          equippedSlots = allNull ? new Array(EQUIP_SLOTS.length).fill(null) : mapped;
+        } else if (equippedSlots.every((x) => !x)) {
+          equippedSlots = buildEquippedFromInventory(normalized);
+        } else {
+          // 清掉已不存在的
+          equippedSlots = equippedSlots.map((eq) => (eq && normalized.find((it) => it.id === eq.id)) || null);
+        }
+        const equipItems = equippedSlots;
+        renderEquipUI(equipItems);
+        renderBagUI(normalized);
+        if (summary && typeof summary.total_qty === "number") {
+          const cap = summary.capacity || 500;
+          bagCount.textContent = `${summary.total_qty} / ${cap}`;
+        }
+      }
+
+      function setupMobileMenu() {
+        if (!mobileMenuBtn || !mobileMenu || !mobilePanel || !mobileOverlay) return;
+        mobileMenuBtn.addEventListener("click", () => {
+          mobileMenu.classList.remove("hidden");
+          requestAnimationFrame(() => {
+            mobilePanel.classList.remove("translate-x-full");
+            mobilePanel.classList.add("translate-x-0");
+          });
+        });
+        mobileOverlay.addEventListener("click", () => {
+          mobilePanel.classList.add("translate-x-full");
+          mobilePanel.classList.remove("translate-x-0");
+          setTimeout(() => mobileMenu.classList.add("hidden"), 200);
+        });
+      }
+
+      function logout() {
+        localStorage.removeItem("virtual_exchange_user");
+        window.location.href = "index.html";
+      }
+
+      async function persistEquipment() {
+        if (!currentUser) return;
+        const payload = {
+          weapon_id: equippedSlots[0]?.id || null,
+          shield_id: equippedSlots[1]?.id || null,
+          armor_id: equippedSlots[2]?.id || null,
+          cloak_id: equippedSlots[3]?.id || null,
+          head_id: equippedSlots[4]?.id || null,
+          ring_id: equippedSlots[5]?.id || null,
+          acc1_id: equippedSlots[6]?.id || null,
+          acc2_id: equippedSlots[7]?.id || null,
+        };
+        try {
+          const updated = await fetchJSON(`/api/users/${encodeURIComponent(currentUser.discord_id)}/equipment`, {
+            method: "POST",
+            body: payload,
+          });
+          profile = updated;
+        } catch (err) {
+          // 若失敗，暫不阻斷前端行為
+        }
+      }
+
+      async function init() {
+        ensureUser();
+        setupMobileMenu();
+        try {
+          await loadProfile();
+        } catch {}
+        try {
+          await loadWallet();
+        } catch {}
+        try {
+          await loadInventory();
+        } catch {}
+        if (logoutBtnDesktop) logoutBtnDesktop.addEventListener("click", logout);
+        if (logoutBtnMobile) logoutBtnMobile.addEventListener("click", logout);
+        if (equipModalClose) equipModalClose.addEventListener("click", closeEquipModal);
+        if (equipModal) {
+          equipModal.addEventListener("click", (e) => {
+            if (e.target === equipModal) closeEquipModal();
+          });
+        }
+        if (equipModalAction) {
+          equipModalAction.addEventListener("click", () => {
+            if (!currentModalItem) return;
+            const equipped = equippedSlots.some((eq) => eq && eq.id === currentModalItem.id);
+            if (equipped) {
+              unequipItem(currentModalItem);
+            } else {
+              equipItem(currentModalItem);
+            }
+            renderEquipModal(currentModalItem);
+            closeEquipModal();
+          });
+        }
+      }
+
+      init();
+    </script>
+  </body>
+</html>
