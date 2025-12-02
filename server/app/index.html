@@ -143,7 +143,7 @@
               這裡是結合 RPG 冒險與玩家市場的裝備交易平台。打怪刷副本取得掉落，鍛造強化你的武器與防具，並能像交易所一樣自由掛單、買賣裝備，打造專屬你的傳說角色。
             </p>
             <div class="flex flex-wrap gap-3 pt-2">
-              <a href="market.html" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-fuchsia-400 to-cyan-300 text-slate-900 font-semibold shadow-lg shadow-fuchsia-500/30 hover:scale-[1.02] transition">開始冒險</a>
+              <button id="startAdventure" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-fuchsia-400 to-cyan-300 text-slate-900 font-semibold shadow-lg shadow-fuchsia-500/30 hover:scale-[1.02] transition">開始冒險</button>
               <a href="#about" class="px-4 py-2.5 rounded-xl border border-slate-700 text-slate-100 hover:border-cyan-300/60">了解玩法</a>
             </div>
           </div>
@@ -443,6 +443,25 @@
       }
 
       setInterval(loadTicker, 7000);
+
+      // 開始冒險：判斷登入狀態
+      const startAdventure = document.getElementById('startAdventure');
+      if (startAdventure) {
+        startAdventure.addEventListener('click', () => {
+          let cachedUser = null;
+          try {
+            const raw = localStorage.getItem('virtual_exchange_user');
+            if (raw) cachedUser = JSON.parse(raw);
+          } catch {
+            cachedUser = null;
+          }
+          if (cachedUser) {
+            window.location.href = 'market.html';
+          } else {
+            window.location.href = 'login.html';
+          }
+        });
+      }
     </script>
   </body>
 </html>
