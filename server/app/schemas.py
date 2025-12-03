@@ -181,3 +181,66 @@ class TradeOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class SkillCategoryCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+
+
+class SkillCategoryOut(BaseModel):
+    id: int
+    name: str
+    description: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class MonsterCreate(BaseModel):
+    name: str
+    level: int = Field(..., ge=1)
+    area: str
+    drop_items: List[str] = Field(default_factory=list, description="掉落物品清單")
+    attack: int = Field(..., ge=0)
+    hp: int = Field(..., ge=0)
+    defense: int = Field(..., ge=0)
+    skill_category_ids: List[int] = Field(default_factory=list, description="技能類別 ID 清單，可為空")
+
+
+class MonsterOut(BaseModel):
+    id: int
+    name: str
+    level: int
+    area: str
+    drop_items: List[str]
+    attack: int
+    hp: int
+    defense: int
+    created_at: datetime
+    skill_categories: List[SkillCategoryOut] = []
+
+    class Config:
+        from_attributes = True
+
+
+class DungeonCreate(BaseModel):
+    name: str
+    level_req: int = Field(..., ge=1)
+    difficulty: str
+    icon: Optional[str] = None
+    boss_id: Optional[int] = Field(None, description="對應怪物 ID")
+
+
+class DungeonOut(BaseModel):
+    id: int
+    name: str
+    level_req: int
+    difficulty: str
+    icon: Optional[str] = None
+    boss_id: Optional[int] = None
+    created_at: datetime
+    boss: Optional[MonsterOut] = None
+
+    class Config:
+        from_attributes = True

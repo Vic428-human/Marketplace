@@ -145,3 +145,55 @@ class Trade(Base):
     )
 
     item_template: Mapped["ItemTemplate"] = relationship("ItemTemplate")
+
+
+class SkillCategory(Base):
+    __tablename__ = "skill_categories"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
+    description: Mapped[str | None] = mapped_column(Text)
+
+
+class MonsterSkillCategory(Base):
+    __tablename__ = "monster_skill_categories"
+    monster_id: Mapped[int] = mapped_column(ForeignKey("monsters.id"), primary_key=True)
+    skill_category_id: Mapped[int] = mapped_column(ForeignKey("skill_categories.id"), primary_key=True)
+
+
+class Monster(Base):
+    __tablename__ = "monsters"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    level: Mapped[int] = mapped_column(Integer, default=1)
+    area: Mapped[str] = mapped_column(String(120), nullable=False)
+    drop_items: Mapped[str] = mapped_column(Text, default="[]")
+    attack: Mapped[int] = mapped_column(Integer, default=0)
+    hp: Mapped[int] = mapped_column(Integer, default=0)
+    defense: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
+
+    skill_categories: Mapped[List["SkillCategory"]] = relationship(
+        "SkillCategory",
+        secondary="monster_skill_categories",
+        backref="monsters",
+    )
+
+
+class Dungeon(Base):
+    __tablename__ = "dungeons"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    level_req: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    difficulty: Mapped[str] = mapped_column(String(20), nullable=False)
+    icon: Mapped[str | None] = mapped_column(String(64))
+    boss_id: Mapped[int | None] = mapped_column(ForeignKey("monsters.id"))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
+
+    boss: Mapped["Monster"] = relationship("Monster")

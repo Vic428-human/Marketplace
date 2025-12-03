@@ -2,6 +2,7 @@
 from contextlib import asynccontextmanager
 from decimal import Decimal
 from typing import List
+import json
 
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -32,7 +33,46 @@ from .schemas import (
     UserEquipmentUpdate,
     WalletOut,
     WalletTopupIn,
+    SkillCategoryCreate,
+    SkillCategoryOut,
+    MonsterCreate,
+    MonsterOut,
+    DungeonCreate,
+    DungeonOut,
 )
+
+
+def serialize_monster(monster: models_db.Monster) -> MonsterOut:
+    try:
+        drop_items = json.loads(monster.drop_items or "[]")
+    except Exception:
+        drop_items = []
+
+    return MonsterOut(
+        id=monster.id,
+        name=monster.name,
+        level=monster.level,
+        area=monster.area,
+        drop_items=drop_items,
+        attack=monster.attack,
+        hp=monster.hp,
+        defense=monster.defense,
+        created_at=monster.created_at,
+        skill_categories=monster.skill_categories or [],
+    )
+
+
+def serialize_dungeon(dungeon: models_db.Dungeon) -> DungeonOut:
+    return DungeonOut(
+        id=dungeon.id,
+        name=dungeon.name,
+        level_req=dungeon.level_req,
+        difficulty=dungeon.difficulty,
+        icon=dungeon.icon,
+        boss_id=dungeon.boss_id,
+        created_at=dungeon.created_at,
+        boss=serialize_monster(dungeon.boss) if dungeon.boss else None,
+    )
 
 LEVEL_UP_EXP = 100
 BAG_CAPACITY = 500
@@ -770,3 +810,127 @@ def get_inventory_summary(discord_id: str, db: Session = Depends(get_db)):
     filtered = [it for it in items if int(it.qty or 0) > 0]
     total_qty = sum(int(it.qty or 0) for it in filtered)
     return InventorySummaryOut(discord_id=discord_id, total_qty=total_qty, capacity=BAG_CAPACITY, items=filtered)
+
+
+# 技能類別 / 怪物
+@app.post("/api/skill-categories", response_model=SkillCategoryOut, tags=["Monster"])
+def create_skill_category(payload: SkillCategoryCreate, db: Session = Depends(get_db)):
+    exists = (
+        db.query(models_db.SkillCategory)
+        .filter(models_db.SkillCategory.name == payload.name)
+        .first()
+    )
+    if exists:
+        raise HTTPException(status_code=400, detail="技能類別已存在")
+
+    category = models_db.SkillCategory(name=payload.name, description=payload.description)
+    db.add(category)
+    db.commit()
+    db.refresh(category)
+    return category
+
+
+@app.get("/api/skill-categories", response_model=List[SkillCategoryOut], tags=["Monster"])
+def list_skill_categories(db: Session = Depends(get_db)):
+    cats = db.query(models_db.SkillCategory).order_by(models_db.SkillCategory.id).all()
+    return cats
+
+
+@app.post("/api/monsters", response_model=MonsterOut, tags=["Monster"])
+def create_monster(payload: MonsterCreate, db: Session = Depends(get_db)):
+    categories: list[models_db.SkillCategory] = []
+    if payload.skill_category_ids:
+        categories = (
+            db.query(models_db.SkillCategory)
+            .filter(models_db.SkillCategory.id.in_(payload.skill_category_ids))
+            .all()
+        )
+        found_ids = {c.id for c in categories}
+        missing = [cid for cid in payload.skill_category_ids if cid not in found_ids]
+        if missing:
+            raise HTTPException(status_code=404, detail=f"技能類別不存在: {missing}")
+
+    monster = models_db.Monster(
+        name=payload.name,
+        level=payload.level,
+        area=payload.area,
+        drop_items=json.dumps(payload.drop_items or []),
+        attack=payload.attack,
+        hp=payload.hp,
+        defense=payload.defense,
+    )
+    monster.skill_categories = categories
+    db.add(monster)
+    db.commit()
+    db.refresh(monster)
+    return serialize_monster(monster)
+
+
+@app.get("/api/monsters", response_model=List[MonsterOut], tags=["Monster"])
+def list_monsters(db: Session = Depends(get_db)):
+    monsters = (
+        db.query(models_db.Monster)
+        .options(joinedload(models_db.Monster.skill_categories))
+        .order_by(models_db.Monster.level.asc(), models_db.Monster.id.asc())
+        .all()
+    )
+    return [serialize_monster(m) for m in monsters]
+
+
+@app.get("/api/monsters/{monster_id}", response_model=MonsterOut, tags=["Monster"])
+def get_monster(monster_id: int, db: Session = Depends(get_db)):
+    monster = (
+        db.query(models_db.Monster)
+        .options(joinedload(models_db.Monster.skill_categories))
+        .get(monster_id)
+    )
+    if not monster:
+        raise HTTPException(status_code=404, detail="怪物不存在")
+    return serialize_monster(monster)
+
+
+# Dungeons
+@app.post("/api/dungeons", response_model=DungeonOut, tags=["Dungeon"])
+def create_dungeon(payload: DungeonCreate, db: Session = Depends(get_db)):
+    boss = None
+    if payload.boss_id:
+        boss = db.query(models_db.Monster).get(payload.boss_id)
+        if not boss:
+            raise HTTPException(status_code=404, detail="Boss 不存在")
+
+    dungeon = models_db.Dungeon(
+        name=payload.name,
+        level_req=payload.level_req,
+        difficulty=payload.difficulty,
+        icon=payload.icon,
+        boss_id=payload.boss_id,
+    )
+    db.add(dungeon)
+    db.commit()
+    db.refresh(dungeon)
+    if boss:
+        dungeon.boss = boss
+    return serialize_dungeon(dungeon)
+
+
+@app.get("/api/dungeons", response_model=List[DungeonOut], tags=["Dungeon"])
+def list_dungeons(db: Session = Depends(get_db)):
+    dungeons = (
+        db.query(models_db.Dungeon)
+        .options(joinedload(models_db.Dungeon.boss).joinedload(models_db.Monster.skill_categories))
+        .order_by(models_db.Dungeon.level_req.asc(), models_db.Dungeon.id.asc())
+        .all()
+    )
+    return [serialize_dungeon(d) for d in dungeons]
+
+
+@app.get("/api/dungeons/{dungeon_id}", response_model=DungeonOut, tags=["Dungeon"])
+def get_dungeon(dungeon_id: int, db: Session = Depends(get_db)):
+    dungeon = (
+        db.query(models_db.Dungeon)
+        .options(joinedload(models_db.Dungeon.boss).joinedload(models_db.Monster.skill_categories))
+        .get(dungeon_id)
+    )
+    if not dungeon:
+        raise HTTPException(status_code=404, detail="Dungeon 不存在")
+    return serialize_dungeon(dungeon)

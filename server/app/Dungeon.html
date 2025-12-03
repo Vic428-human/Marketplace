@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RPG 冒險裝備交易平台 | 地下城冒險</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --card: #11172a;
+      --panel: #0f162a;
+      --accent: #c084fc;
+      --accent-2: #38bdf8;
+      --amber: #fbbf24;
+      --green: #34d399;
+      --red: #f87171;
+    }
+    body {
+      font-family: "Manrope", "Space Grotesk", system-ui, -apple-system, sans-serif;
+      background: radial-gradient(circle at 10% 20%, rgba(56, 189, 248, 0.12), transparent 26%),
+                  radial-gradient(circle at 90% 10%, rgba(192, 132, 252, 0.14), transparent 25%),
+                  radial-gradient(circle at 50% 90%, rgba(251, 191, 36, 0.12), transparent 30%),
+                  linear-gradient(160deg, #090d1a 0%, #0c1224 40%, #0b1020 100%);
+      color: #e5e7eb;
+    }
+    .glass {
+      background: linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+      border: 1px solid rgba(255,255,255,0.06);
+      box-shadow: 0 20px 80px rgba(0,0,0,0.45);
+      backdrop-filter: blur(14px);
+    }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: rgba(31, 41, 55, 0.5); border-radius: 3px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.5); border-radius: 3px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(99, 102, 241, 0.7); }
+  </style>
+</head>
+<body class="min-h-screen text-gray-100">
+  <div class="max-w-7xl mx-auto px-4 py-6 space-y-6" id="page">
+        <header class="glass rounded-2xl px-5 py-4 flex items-center justify-between relative overflow-visible z-50">
+          <div class="flex items-center gap-3">
+            <a href="index.html" class="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-300 via-fuchsia-400 to-cyan-300 flex items-center justify-center text-slate-900 font-bold text-lg shadow-lg shadow-fuchsia-500/30">VE</a>
+            <div class="flex flex-col justify-center">
+              <div class="text-xs uppercase tracking-[0.08em] text-slate-300">RPG 裝備交易平台</div>
+              <div class="text-lg font-semibold tracking-tight text-white">打怪・掉寶・自由交易</div>
+            </div>
+          </div>
+          <nav class="hidden md:flex items-center gap-8 text-sm text-slate-200">
+            <a class="hover:text-white" href="index.html">首頁</a>
+            <a class="text-cyan-200 font-semibold" href="Dungeon.html">地城</a>
+            <a class="hover:text-white" href="market.html">裝備市場</a>
+            <a class="hover:text-white" href="AboutPage.html">世界觀與玩法</a>
+          </nav>
+          <div class="flex items-center gap-3">
+            <button
+              id="userMenuButton"
+              class="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-fuchsia-300 to-cyan-300 text-slate-900 font-semibold shadow-lg shadow-fuchsia-400/30 hover:shadow-pink-300/20 transition"
+            >
+              登入
+            </button>
+            <button id="mobileMenuBtn" class="md:hidden px-3 py-2 rounded-xl bg-slate-800 text-slate-200 border border-slate-700 hover:border-cyan-300/70 transition" aria-label="開啟選單">
+              <span class="block w-5 h-0.5 bg-slate-200 mb-1"></span>
+              <span class="block w-5 h-0.5 bg-slate-200 mb-1"></span>
+              <span class="block w-5 h-0.5 bg-slate-200"></span>
+            </button>
+          </div>
+        </header>
+      <div id="login-block" class="hidden">
+        <div class="flex items-center justify-center min-h-[60vh]">
+          <div class="text-center bg-gray-900/50 backdrop-blur-xl border border-indigo-500/30 rounded-2xl p-12 shadow-[0_0_30px_rgba(99,102,241,0.2)]">
+            <h2 class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-pink-400 to-cyan-400 mb-4">請先登入</h2>
+            <p class="text-gray-400">登入後才能進入地下城冒險</p>
+          </div>
+        </div>
+      </div>
+
+      <div id="dungeon-block" class="space-y-6">
+        <div class="bg-gradient-to-r from-gray-900/90 via-indigo-900/50 to-gray-900/90 backdrop-blur-xl border border-indigo-500/30 rounded-2xl p-8 shadow-[0_0_30px_rgba(99,102,241,0.2)] relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 rounded-full blur-[100px]"></div>
+          <div class="relative z-10">
+            <h1 class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-pink-400 to-cyan-400 mb-2">地下城冒險</h1>
+            <p class="text-gray-300">挑戰強大的怪物，獲得稀有裝備</p>
+          </div>
+        </div>
+
+        <div id="dungeon-list"></div>
+
+        <div id="battle-area" class="hidden bg-gray-900/50 backdrop-blur-xl border border-indigo-500/30 rounded-2xl p-8 shadow-[0_0_30px_rgba(99,102,241,0.2)]">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <div class="bg-gradient-to-br from-gray-800/50 to-gray-800/30 border border-indigo-500/20 rounded-xl p-6">
+              <div class="text-center mb-4">
+                <div class="text-5xl mb-3" id="player-icon">🧝</div>
+                <div class="text-indigo-300 mb-2" id="player-name">玩家</div>
+                <div class="text-gray-400" id="player-level">Lv.85</div>
+              </div>
+              <div class="mb-2">
+                <div class="flex justify-between text-sm mb-1">
+                  <span class="text-gray-400">HP</span>
+                  <span class="text-emerald-400" id="player-hp-text">100/100</span>
+                </div>
+                <div class="h-3 bg-gray-700/50 rounded-full overflow-hidden">
+                  <div id="player-hp-bar" class="h-full bg-gradient-to-r from-emerald-500 to-cyan-500 transition-all duration-500" style="width: 100%"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-gradient-to-br from-gray-800/50 to-gray-800/30 border border-red-500/20 rounded-xl p-6">
+              <div class="text-center mb-4">
+                <div class="text-5xl mb-3" id="monster-icon">👹</div>
+                <div class="text-red-300 mb-2" id="monster-name">魔王</div>
+                <div class="text-gray-400" id="monster-level">Lv.1</div>
+              </div>
+              <div class="mb-2">
+                <div class="flex justify-between text-sm mb-1">
+                  <span class="text-gray-400">HP</span>
+                  <span class="text-red-400" id="monster-hp-text">0/0</span>
+                </div>
+                <div class="h-3 bg-gray-700/50 rounded-full overflow-hidden">
+                  <div id="monster-hp-bar" class="h-full bg-gradient-to-r from-red-500 to-orange-500 transition-all duration-500" style="width: 100%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-gray-800/50 border border-indigo-500/20 rounded-xl p-4 mb-6 max-h-40 overflow-y-auto custom-scrollbar" id="battle-log"></div>
+
+          <div id="battle-result" class="space-y-6 hidden">
+            <div id="win-panel" class="hidden bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 border border-emerald-400/50 rounded-xl p-6 text-center">
+              <div class="text-4xl mb-3">🏆</div>
+              <h3 class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400 mb-2">勝利！</h3>
+              <div class="flex justify-center gap-6 text-gray-300" id="reward-text"></div>
+            </div>
+
+            <div id="lose-panel" class="hidden bg-gradient-to-r from-red-500/20 to-pink-500/20 border border-red-400/50 rounded-xl p-6 text-center">
+              <div class="text-5xl mb-4">💀</div>
+              <h3 class="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-pink-400 mb-2">戰敗</h3>
+              <p class="text-gray-300">下次再接再厲吧！</p>
+            </div>
+
+            <div id="drop-section" class="hidden">
+              <h4 class="text-indigo-300 mb-4 flex items-center gap-2">
+                <span class="text-lg">⚡</span>
+                掉落裝備
+              </h4>
+              <div id="drop-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6"></div>
+            </div>
+
+            <div class="flex gap-4">
+              <button id="back-button" class="flex-1 px-6 py-3 bg-gradient-to-r from-indigo-600 to-pink-600 text-white rounded-lg hover:from-indigo-500 hover:to-pink-500 transition-all duration-300 shadow-[0_0_20px_rgba(99,102,241,0.5)]">返回冒險列表</button>
+              <button id="replay-button" class="hidden flex-1 px-6 py-3 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white rounded-lg hover:from-emerald-500 hover:to-cyan-500 transition-all duration-300 shadow-[0_0_20px_rgba(16,185,129,0.5)]">再戰一場</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  <script>
+    const isLoggedIn = true;      // 若需測試未登入畫面，改為 false
+    const userName = '勇者';       // 玩家名稱
+    const playerLevel = 85;        // 玩家等級
+
+    const dungeons = [
+      { id: '1', name: '初心者森林', level: 1, difficulty: 'easy', monster: { name: '史萊姆王', icon: '🟢', hp: 50, attack: 5 }, rewards: { exp: 100, gold: 50 }, requiredLevel: 1 },
+      { id: '2', name: '幽冥洞穴', level: 20, difficulty: 'normal', monster: { name: '骷髏領主', icon: '💀', hp: 150, attack: 15 }, rewards: { exp: 500, gold: 200 }, requiredLevel: 15 },
+      { id: '3', name: '熔岩山谷', level: 40, difficulty: 'normal', monster: { name: '熔岩巨人', icon: '🔥', hp: 300, attack: 30 }, rewards: { exp: 1500, gold: 500 }, requiredLevel: 35 },
+      { id: '4', name: '暴風神殿', level: 60, difficulty: 'hard', monster: { name: '風暴龍', icon: '🐉', hp: 500, attack: 50 }, rewards: { exp: 3000, gold: 1000 }, requiredLevel: 55 },
+      { id: '5', name: '暗影深淵', level: 80, difficulty: 'hard', monster: { name: '暗影領主', icon: '🕷️', hp: 800, attack: 75 }, rewards: { exp: 5000, gold: 2000 }, requiredLevel: 75 },
+      { id: '6', name: '混沌之巢', level: 100, difficulty: 'nightmare', monster: { name: '混沌魔君', icon: '👁️', hp: 1500, attack: 100 }, rewards: { exp: 10000, gold: 5000 }, requiredLevel: 95 },
+    ];
+
+    const difficultyText = { easy: '簡單', normal: '一般', hard: '困難', nightmare: '夢魘' };
+    const rarityStyles = {
+      legendary: { bg: 'from-yellow-500/30 to-orange-500/30', border: 'border-yellow-400/50', text: 'text-yellow-400' },
+      epic: { bg: 'from-purple-500/30 to-pink-500/30', border: 'border-purple-400/50', text: 'text-purple-400' },
+      rare: { bg: 'from-blue-500/30 to-cyan-500/30', border: 'border-blue-400/50', text: 'text-blue-400' },
+      common: { bg: 'from-gray-500/30 to-gray-600/30', border: 'border-gray-400/50', text: 'text-gray-300' },
+    };
+
+    let selectedDungeon = null;
+    let battleResult = null;
+    let droppedItems = [];
+    let playerHP = 100;
+    let monsterHP = 0;
+    let battleLog = [];
+    let battleInterval = null;
+    let monsterTimeout = null;
+    let isBattling = false;
+
+    const loginBlock = document.getElementById('login-block');
+    const dungeonBlock = document.getElementById('dungeon-block');
+    const dungeonList = document.getElementById('dungeon-list');
+    const battleArea = document.getElementById('battle-area');
+    const battleLogBox = document.getElementById('battle-log');
+    const battleResultBox = document.getElementById('battle-result');
+    const winPanel = document.getElementById('win-panel');
+    const losePanel = document.getElementById('lose-panel');
+    const dropSection = document.getElementById('drop-section');
+    const dropList = document.getElementById('drop-list');
+    const rewardText = document.getElementById('reward-text');
+    const replayButton = document.getElementById('replay-button');
+    const backButton = document.getElementById('back-button');
+
+    const playerNameEl = document.getElementById('player-name');
+    const playerLevelEl = document.getElementById('player-level');
+    const playerHpText = document.getElementById('player-hp-text');
+    const playerHpBar = document.getElementById('player-hp-bar');
+
+    const monsterNameEl = document.getElementById('monster-name');
+    const monsterLevelEl = document.getElementById('monster-level');
+    const monsterHpText = document.getElementById('monster-hp-text');
+    const monsterHpBar = document.getElementById('monster-hp-bar');
+    const monsterIconEl = document.getElementById('monster-icon');
+
+    function difficultyColors(difficulty) {
+      switch (difficulty) {
+        case 'easy': return { text: 'text-emerald-400', border: 'border-emerald-500/30' };
+        case 'normal': return { text: 'text-blue-400', border: 'border-blue-500/30' };
+        case 'hard': return { text: 'text-purple-400', border: 'border-purple-500/30' };
+        case 'nightmare': return { text: 'text-red-400', border: 'border-red-500/30' };
+        default: return { text: 'text-gray-400', border: 'border-gray-500/30' };
+      }
+    }
+
+    function renderDungeonCards() {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6';
+
+      dungeons.forEach((dungeon) => {
+        const colors = difficultyColors(dungeon.difficulty);
+        const locked = playerLevel < dungeon.requiredLevel;
+        const card = document.createElement('div');
+        card.className = `bg-gray-900/50 backdrop-blur-xl border ${colors.border} rounded-2xl p-6 shadow-[0_0_30px_rgba(99,102,241,0.2)] hover:shadow-[0_0_40px_rgba(99,102,241,0.3)] transition-all cursor-pointer group ${locked ? 'opacity-50' : ''}`;
+        card.innerHTML = `
+          <div class="text-6xl text-center mb-4 group-hover:scale-110 transition-transform">${dungeon.monster.icon}</div>
+          <h3 class="text-indigo-300 text-center mb-2 group-hover:text-indigo-200 transition-colors">${dungeon.name}</h3>
+          <div class="flex items-center justify-center gap-2 mb-4">
+            <span class="text-gray-400">Lv.${dungeon.level}</span>
+            <span class="text-gray-500">|</span>
+            <span class="${colors.text}">${difficultyText[dungeon.difficulty]}</span>
+          </div>
+          <div class="bg-gray-800/50 border border-indigo-500/20 rounded-lg p-3 mb-4">
+            <div class="text-gray-400 mb-2">Boss: ${dungeon.monster.name}</div>
+            <div class="flex justify-between text-sm">
+              <div class="flex items-center gap-1"><span>❤️</span><span class="text-gray-300">${dungeon.monster.hp}</span></div>
+              <div class="flex items-center gap-1"><span>⚔️</span><span class="text-gray-300">${dungeon.monster.attack}</span></div>
+            </div>
+          </div>
+          <div class="flex justify-between items-center">
+            <div class="text-emerald-400">+${dungeon.rewards.exp} EXP</div>
+            <div class="text-yellow-400">${dungeon.rewards.gold} Z</div>
+          </div>
+          ${locked ? `<div class="mt-3 text-center text-red-400 text-sm">需求等級 ${dungeon.requiredLevel}</div>` : `
+            <div class="mt-3 flex items-center justify-center gap-2 text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity">
+              <span>進入戰鬥</span><span>›</span>
+            </div>`}
+        `;
+
+        card.addEventListener('click', () => {
+          if (locked) {
+            alert(`需要等級 ${dungeon.requiredLevel} 才能進入此地城`);
+            return;
+          }
+          startBattle(dungeon);
+        });
+
+        wrapper.appendChild(card);
+      });
+
+      dungeonList.innerHTML = '';
+      dungeonList.appendChild(wrapper);
+    }
+
+    function generateRandomDrop(dungeonLevel) {
+      const rarityRoll = Math.random();
+      let rarity = 'common';
+      if (rarityRoll < 0.05) rarity = 'legendary';
+      else if (rarityRoll < 0.2) rarity = 'epic';
+      else if (rarityRoll < 0.5) rarity = 'rare';
+
+      const rarityMultiplier = { common: 1, rare: 2, epic: 3, legendary: 5 };
+      const itemTypes = [
+        { name: '長劍', icon: '⚔️', mainStat: 'attack' },
+        { name: '戰盾', icon: '🛡️', mainStat: 'defense' },
+        { name: '短刃', icon: '🥷', mainStat: 'agility' },
+        { name: '魔杖', icon: '✨', mainStat: 'intelligence' },
+        { name: '護符', icon: '🍀', mainStat: 'luck' },
+      ];
+
+      const baseStats = dungeonLevel * 2;
+      const multiplier = rarityMultiplier[rarity];
+      const itemType = itemTypes[Math.floor(Math.random() * itemTypes.length)];
+
+      const stats = {
+        attack: itemType.mainStat === 'attack' ? baseStats * multiplier : Math.floor(baseStats * multiplier * 0.3),
+        defense: itemType.mainStat === 'defense' ? baseStats * multiplier : Math.floor(baseStats * multiplier * 0.3),
+        agility: itemType.mainStat === 'agility' ? baseStats * multiplier : Math.floor(baseStats * multiplier * 0.2),
+        intelligence: itemType.mainStat === 'intelligence' ? baseStats * multiplier : Math.floor(baseStats * multiplier * 0.3),
+        luck: itemType.mainStat === 'luck' ? baseStats * multiplier : Math.floor(baseStats * multiplier * 0.1),
+      };
+
+      const prefix = rarity === 'legendary' ? '傳說' : rarity === 'epic' ? '史詩' : rarity === 'rare' ? '稀有' : '普通';
+      return {
+        id: `${Date.now()}-${Math.random()}`,
+        name: `${prefix}${itemType.name}`,
+        rarity,
+        stats,
+        value: baseStats * multiplier * 1000,
+        icon: itemType.icon,
+      };
+    }
+
+    function pushLog(text) {
+      battleLog.push(text);
+      renderLogs();
+    }
+
+    function renderLogs() {
+      battleLogBox.innerHTML = '';
+      battleLog.forEach((line) => {
+        const div = document.createElement('div');
+        div.className = 'text-gray-300 text-sm mb-1';
+        div.textContent = line;
+        battleLogBox.appendChild(div);
+      });
+
+      if (isBattling) {
+        const row = document.createElement('div');
+        row.className = 'flex items-center gap-2 text-indigo-400 mt-2';
+        row.innerHTML = '<span class="animate-spin">⟳</span><span>戰鬥中...</span>';
+        battleLogBox.appendChild(row);
+      }
+
+      battleLogBox.scrollTop = battleLogBox.scrollHeight;
+    }
+
+    function renderBattleState() {
+      if (!selectedDungeon) return;
+      playerNameEl.textContent = userName;
+      playerLevelEl.textContent = `Lv.${playerLevel}`;
+      playerHpText.textContent = `${playerHP}/100`;
+      playerHpBar.style.width = `${playerHP}%`;
+
+      monsterNameEl.textContent = selectedDungeon.monster.name;
+      monsterLevelEl.textContent = `Lv.${selectedDungeon.level}`;
+      monsterHpText.textContent = `${Math.max(0, monsterHP)}/${selectedDungeon.monster.hp}`;
+      const monsterPercent = Math.max(0, (monsterHP / selectedDungeon.monster.hp) * 100);
+      monsterHpBar.style.width = `${monsterPercent}%`;
+      monsterIconEl.textContent = selectedDungeon.monster.icon;
+    }
+
+    function renderDrops() {
+      if (!droppedItems.length) return;
+      dropList.innerHTML = '';
+      droppedItems.forEach((item) => {
+        const style = rarityStyles[item.rarity];
+        const card = document.createElement('div');
+        card.className = `bg-gradient-to-br ${style.bg} ${style.border} border-2 rounded-xl p-4`;
+        card.innerHTML = `
+          <div class="flex items-center gap-3 mb-3">
+            <div class="text-3xl">${item.icon}</div>
+            <div>
+              <div class="${style.text}">${item.name}</div>
+              <div class="text-yellow-400 text-sm">${item.value.toLocaleString()} Z</div>
+            </div>
+          </div>
+          <div class="text-gray-400 text-sm space-y-1">
+            ${item.stats.attack > 0 ? `<div>攻擊 +${item.stats.attack}</div>` : ''}
+            ${item.stats.defense > 0 ? `<div>防禦 +${item.stats.defense}</div>` : ''}
+            ${item.stats.agility > 0 ? `<div>敏捷 +${item.stats.agility}</div>` : ''}
+            ${item.stats.intelligence > 0 ? `<div>智力 +${item.stats.intelligence}</div>` : ''}
+            ${item.stats.luck > 0 ? `<div>幸運 +${item.stats.luck}</div>` : ''}
+          </div>
+        `;
+        dropList.appendChild(card);
+      });
+    }
+
+    function startBattle(dungeon) {
+      clearInterval(battleInterval);
+      clearTimeout(monsterTimeout);
+      selectedDungeon = dungeon;
+      battleResult = null;
+      droppedItems = [];
+      playerHP = 100;
+      monsterHP = dungeon.monster.hp;
+      battleLog = [`進入 ${dungeon.name}...`, `遭遇 ${dungeon.monster.name}！`];
+      isBattling = true;
+
+      dungeonList.classList.add('hidden');
+      battleArea.classList.remove('hidden');
+      battleResultBox.classList.add('hidden');
+      dropSection.classList.add('hidden');
+      winPanel.classList.add('hidden');
+      losePanel.classList.add('hidden');
+      replayButton.classList.add('hidden');
+
+      renderBattleState();
+      renderLogs();
+
+      setTimeout(() => simulateBattle(dungeon), 600);
+    }
+
+    function simulateBattle(dungeon) {
+      let pHP = 100;
+      let mHP = dungeon.monster.hp;
+
+      battleInterval = setInterval(() => {
+        const playerDamage = Math.floor(Math.random() * 20) + 15;
+        mHP -= playerDamage;
+        monsterHP = mHP;
+        pushLog(`你造成了 ${playerDamage} 點傷害！`);
+        renderBattleState();
+
+        if (mHP <= 0) {
+          endBattle('win', dungeon);
+          return;
+        }
+
+        monsterTimeout = setTimeout(() => {
+          const monsterDamage = Math.floor(Math.random() * dungeon.monster.attack) + 5;
+          pHP -= monsterDamage;
+          playerHP = Math.max(0, pHP);
+          pushLog(`${dungeon.monster.name} 對你造成了 ${monsterDamage} 點傷害！`);
+          renderBattleState();
+
+          if (pHP <= 0) {
+            endBattle('lose', dungeon);
+          }
+        }, 500);
+      }, 1500);
+    }
+
+    function endBattle(result, dungeon) {
+      clearInterval(battleInterval);
+      clearTimeout(monsterTimeout);
+      isBattling = false;
+      battleResult = result;
+      renderLogs();
+
+      battleResultBox.classList.remove('hidden');
+      if (result === 'win') {
+        winPanel.classList.remove('hidden');
+        losePanel.classList.add('hidden');
+        rewardText.innerHTML = `<div>獲得 ${dungeon.rewards.exp} EXP</div><div>獲得 ${dungeon.rewards.gold} Z</div>`;
+
+        const drops = [];
+        const count = Math.floor(Math.random() * 3) + 1;
+        for (let i = 0; i < count; i++) drops.push(generateRandomDrop(dungeon.level));
+        droppedItems = drops;
+        dropSection.classList.remove('hidden');
+        renderDrops();
+        replayButton.classList.remove('hidden');
+      } else {
+        losePanel.classList.remove('hidden');
+        winPanel.classList.add('hidden');
+        dropSection.classList.add('hidden');
+        replayButton.classList.add('hidden');
+      }
+    }
+
+    function resetBattle() {
+      clearInterval(battleInterval);
+      clearTimeout(monsterTimeout);
+      selectedDungeon = null;
+      battleResult = null;
+      droppedItems = [];
+      battleLog = [];
+      battleArea.classList.add('hidden');
+      dungeonList.classList.remove('hidden');
+    }
+
+    backButton.addEventListener('click', resetBattle);
+    replayButton.addEventListener('click', () => selectedDungeon && startBattle(selectedDungeon));
+
+    function init() {
+      if (!isLoggedIn) {
+        loginBlock.classList.remove('hidden');
+        dungeonBlock.classList.add('hidden');
+        return;
+      }
+      loginBlock.classList.add('hidden');
+      dungeonBlock.classList.remove('hidden');
+      renderDungeonCards();
+    }
+
+    init();
+  </script>
+</body>
+</html>
