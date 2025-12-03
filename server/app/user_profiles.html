@@ -217,7 +217,7 @@
         </div>
         <nav class="hidden md:flex items-center gap-6 text-sm text-slate-200">
           <a class="hover:text-white" href="index.html">首頁</a>
-          <a class="text-cyan-200 font-semibold" href="Dungeon.html">地城</a>
+          <a class="hover:text-white" href="Dungeon.html">地城</a>
           <a class="text-cyan-200 font-semibold" href="market.html">裝備市場</a>
           <a class="hover:text-white" href="AboutPage.html">世界觀與玩法</a>
         </nav>
@@ -322,7 +322,7 @@
 
           <div class="hero-card rounded-2xl p-6 flex flex-col items-center gap-4">
             <div class="hero-avatar">
-              <span class="text-5xl" aria-label="avatar">🧙‍♂️</span>
+              <span class="text-5xl" aria-label="avatar">🧝</span>
             </div>
             <div class="text-center space-y-1">
               <div class="text-xs text-slate-300">角色等級</div>
@@ -409,7 +409,7 @@
     </div>
 
     <script>
-      const API_BASE = "https://tapes-june-addresses-mount.trycloudflare.com";
+      const API_BASE = "https://built-spelling-conduct-providence.trycloudflare.com";
       const NGROK_BYPASS_HEADER = { "ngrok-skip-browser-warning": "true" };
       const LEVEL_UP_EXP = 100;
 
@@ -505,6 +505,7 @@
         const template = raw.item_template || {};
         return {
           id: raw.id,
+          item_template_id: raw.item_template_id || template.id || null,
           name: raw.name || raw.item_name || template.name || "未鑑定物品",
           qty: Number(raw.qty) || 1,
           rarity: (template.rarity || "COMMON").toUpperCase(),
@@ -840,15 +841,16 @@
 
       async function persistEquipment() {
         if (!currentUser) return;
+        const tpl = (slot) => slot?.item_template_id || slot?.template_id || slot?.item_template?.id || null;
         const payload = {
-          weapon_id: equippedSlots[0]?.id || null,
-          shield_id: equippedSlots[1]?.id || null,
-          armor_id: equippedSlots[2]?.id || null,
-          cloak_id: equippedSlots[3]?.id || null,
-          head_id: equippedSlots[4]?.id || null,
-          ring_id: equippedSlots[5]?.id || null,
-          acc1_id: equippedSlots[6]?.id || null,
-          acc2_id: equippedSlots[7]?.id || null,
+          weapon_template_id: tpl(equippedSlots[0]),
+          shield_template_id: tpl(equippedSlots[1]),
+          armor_template_id: tpl(equippedSlots[2]),
+          cloak_template_id: tpl(equippedSlots[3]),
+          head_template_id: tpl(equippedSlots[4]),
+          ring_template_id: tpl(equippedSlots[5]),
+          acc1_template_id: tpl(equippedSlots[6]),
+          acc2_template_id: tpl(equippedSlots[7]),
         };
         try {
           const updated = await fetchJSON(`/api/users/${encodeURIComponent(currentUser.discord_id)}/equipment`, {

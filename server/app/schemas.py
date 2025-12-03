@@ -14,8 +14,10 @@ class AuthRegisterIn(BaseModel):
 
 
 class AuthLoginIn(BaseModel):
-    email: EmailStr
+    provider: str = Field("platform", pattern="^(platform|discord)$")
+    email: Optional[EmailStr] = None
     password: str = Field(..., min_length=1)
+    discord_id: Optional[str] = Field(None, min_length=1)
 
 
 class OrderCreate(BaseModel):
@@ -107,7 +109,7 @@ class UserProfileOut(BaseModel):
     level: int
     exp: int
     provider: Optional[str] = None
-    stat_attack: int = 0
+    stat_attack: int =0
     stat_defense: int = 0
     stat_agility: int = 0
     stat_int: int = 0
@@ -139,13 +141,21 @@ class InventoryGrantIn(BaseModel):
 
 class UserEquipmentUpdate(BaseModel):
     weapon_id: Optional[int] = None
+    weapon_template_id: Optional[int] = None
     shield_id: Optional[int] = None
+    shield_template_id: Optional[int] = None
     armor_id: Optional[int] = None
+    armor_template_id: Optional[int] = None
     cloak_id: Optional[int] = None
+    cloak_template_id: Optional[int] = None
     head_id: Optional[int] = None
+    head_template_id: Optional[int] = None
     ring_id: Optional[int] = None
+    ring_template_id: Optional[int] = None
     acc1_id: Optional[int] = None
+    acc1_template_id: Optional[int] = None
     acc2_id: Optional[int] = None
+    acc2_template_id: Optional[int] = None
 
 
 class InventoryItemOut(BaseModel):
@@ -206,7 +216,8 @@ class MonsterCreate(BaseModel):
     hp: int = Field(..., ge=0)
     defense: int = Field(..., ge=0)
     skill_category_ids: List[int] = Field(default_factory=list, description="技能類別 ID 清單，可為空")
-
+    icon: Optional[str] = Field(None, description="怪物圖示 (emoji 或圖片 URL)")
+    icon: str = Field(... , description="怪物圖示")
 
 class MonsterOut(BaseModel):
     id: int
@@ -219,6 +230,27 @@ class MonsterOut(BaseModel):
     defense: int
     created_at: datetime
     skill_categories: List[SkillCategoryOut] = []
+    drops: List["MonsterDropOut"] = []
+    icon: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class MonsterDropCreate(BaseModel):
+    item_template_id: int
+    drop_rate: float = Field(..., ge=0, le=1, description="0~1 之間")
+    qty_min: int = Field(1, ge=1)
+    qty_max: int = Field(1, ge=1)
+
+
+class MonsterDropOut(BaseModel):
+    monster_id: int
+    item_template_id: int
+    drop_rate: float
+    qty_min: int
+    qty_max: int
+    item_template: Optional[ItemTemplateOut] = None
 
     class Config:
         from_attributes = True
@@ -241,6 +273,15 @@ class DungeonOut(BaseModel):
     boss_id: Optional[int] = None
     created_at: datetime
     boss: Optional[MonsterOut] = None
+    monsters: List[MonsterOut] = []
 
     class Config:
         from_attributes = True
+
+
+class DungeonMonsterAttach(BaseModel):
+    monster_id: int
+
+
+# Resolve forward refs
+MonsterOut.update_forward_refs()

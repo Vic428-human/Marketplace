@@ -37,8 +37,11 @@ from .schemas import (
     SkillCategoryOut,
     MonsterCreate,
     MonsterOut,
+    MonsterDropCreate,
+    MonsterDropOut,
     DungeonCreate,
     DungeonOut,
+    DungeonMonsterAttach,
 )
 
 
@@ -59,6 +62,18 @@ def serialize_monster(monster: models_db.Monster) -> MonsterOut:
         defense=monster.defense,
         created_at=monster.created_at,
         skill_categories=monster.skill_categories or [],
+        icon=monster.icon,
+        drops=[
+            MonsterDropOut(
+                monster_id=d.monster_id,
+                item_template_id=d.item_template_id,
+                drop_rate=float(d.drop_rate),
+                qty_min=d.qty_min,
+                qty_max=d.qty_max,
+                item_template=d.item_template,
+            )
+            for d in (monster.drops or [])
+        ],
     )
 
 
@@ -72,6 +87,7 @@ def serialize_dungeon(dungeon: models_db.Dungeon) -> DungeonOut:
         boss_id=dungeon.boss_id,
         created_at=dungeon.created_at,
         boss=serialize_monster(dungeon.boss) if dungeon.boss else None,
+        monsters=[serialize_monster(m) for m in (dungeon.monsters or [])],
     )
 
 LEVEL_UP_EXP = 100
@@ -311,6 +327,14 @@ def create_item_template(payload: ItemTemplateCreate, db: Session = Depends(get_
 def list_item_templates(db: Session = Depends(get_db)):
     items = db.query(models_db.ItemTemplate).order_by(models_db.ItemTemplate.id).all()
     return items
+
+
+@app.get("/api/item-templates/{template_id}", response_model=ItemTemplateOut, tags=["Item"])
+def get_item_template(template_id: int, db: Session = Depends(get_db)):
+    item = db.get(models_db.ItemTemplate, template_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Item template not found")
+    return item
 
 
 # 建立訂單
@@ -586,7 +610,7 @@ def register_user(payload: AuthRegisterIn, db: Session = Depends(get_db)):
         if username and db.query(models_db.UserProfile).filter(models_db.UserProfile.username == username).first():
             api_error(2003, "用戶名稱已被使用")
         if not email:
-            email = f"{discord_id}@example.com"
+            email = f"discord_{discord_id}@example.com"
         if not username:
             username = discord_id
         if password and len(password) < 6:
@@ -602,6 +626,9 @@ def register_user(payload: AuthRegisterIn, db: Session = Depends(get_db)):
             password_hash=pwd_hash,
         )
 
+    if user.stat_attack in (None, 0):
+        user.stat_attack = 1
+
     ensure_wallet(db, user.discord_id)
     db.commit()
     db.refresh(user)
@@ -610,10 +637,30 @@ def register_user(payload: AuthRegisterIn, db: Session = Depends(get_db)):
 
 @app.post("/api/auth/login", response_model=UserProfileOut, tags=["Auth"])
 def login_user(payload: AuthLoginIn, db: Session = Depends(get_db)):
-    email = payload.email.strip().lower()
-    password = payload.password
+    provider = (payload.provider or "platform").lower()
+    if provider not in ("platform", "discord"):
+        api_error(2008, "provider 不正確", status_code=400)
 
-    user = db.query(models_db.UserProfile).filter(models_db.UserProfile.email == email).first()
+    email = (payload.email or "").strip().lower()
+    password = payload.password
+    discord_id = (payload.discord_id or "").strip()
+
+    if provider == "platform" and not email:
+        api_error(2009, "Email 必填", status_code=400)
+
+    user = None
+    if email:
+        user = db.query(models_db.UserProfile).filter(models_db.UserProfile.email == email).first()
+
+    if not user:
+        derived_discord_id = discord_id
+        if not derived_discord_id and email.startswith("discord_") and email.endswith("@example.com"):
+            derived_discord_id = email[len("discord_") : -len("@example.com")]
+        if not derived_discord_id and email.endswith("@example.com") and provider == "discord":
+            derived_discord_id = email[: -len("@example.com")]
+        if derived_discord_id:
+            user = db.get(models_db.UserProfile, derived_discord_id)
+
     if not user:
         api_error(2005, "帳號未註冊", status_code=404)
     if not verify_password(password, user.password_hash):
@@ -663,14 +710,23 @@ def validate_ownership(db: Session, discord_id: str, item_id: int | None) -> int
 @app.post("/api/users/{discord_id}/equipment", response_model=UserProfileOut, tags=["User"])
 def update_equipment(discord_id: str, payload: UserEquipmentUpdate, db: Session = Depends(get_db)):
     user = ensure_user(db, discord_id)
-    user.equip_weapon_id = validate_ownership(db, discord_id, payload.weapon_id)
-    user.equip_shield_id = validate_ownership(db, discord_id, payload.shield_id)
-    user.equip_armor_id = validate_ownership(db, discord_id, payload.armor_id)
-    user.equip_cloak_id = validate_ownership(db, discord_id, payload.cloak_id)
-    user.equip_head_id = validate_ownership(db, discord_id, payload.head_id)
-    user.equip_ring_id = validate_ownership(db, discord_id, payload.ring_id)
-    user.equip_acc1_id = validate_ownership(db, discord_id, payload.acc1_id)
-    user.equip_acc2_id = validate_ownership(db, discord_id, payload.acc2_id)
+    def resolve_template(template_id: int | None):
+        """Equip directly by item_template_id (UserProfile now stores模板ID)."""
+        if template_id is None:
+            return None
+        tmpl = db.get(models_db.ItemTemplate, template_id)
+        if not tmpl:
+            raise HTTPException(status_code=400, detail=f"Item template {template_id} 不存在")
+        return template_id
+
+    user.equip_weapon_id = resolve_template(payload.weapon_template_id)
+    user.equip_shield_id = resolve_template(payload.shield_template_id)
+    user.equip_armor_id = resolve_template(payload.armor_template_id)
+    user.equip_cloak_id = resolve_template(payload.cloak_template_id)
+    user.equip_head_id = resolve_template(payload.head_template_id)
+    user.equip_ring_id = resolve_template(payload.ring_template_id)
+    user.equip_acc1_id = resolve_template(payload.acc1_template_id)
+    user.equip_acc2_id = resolve_template(payload.acc2_template_id)
 
     equipped_ids = [
         user.equip_weapon_id,
@@ -684,21 +740,14 @@ def update_equipment(discord_id: str, payload: UserEquipmentUpdate, db: Session 
     ]
     equipped_ids = [i for i in equipped_ids if i]
     if equipped_ids:
-        items = (
-            db.query(models_db.InventoryItem)
-            .options(joinedload(models_db.InventoryItem.item_template))
-            .filter(models_db.InventoryItem.id.in_(equipped_ids))
-            .all()
-        )
+        items = db.query(models_db.ItemTemplate).filter(models_db.ItemTemplate.id.in_(equipped_ids)).all()
     else:
         items = []
 
     def sum_stat(key: str) -> int:
         total = 0
         for it in items:
-            tmpl = it.item_template
-            if tmpl:
-                total += int(getattr(tmpl, key, 0) or 0)
+            total += int(getattr(it, key, 0) or 0)
         return total
 
     user.stat_attack = sum_stat("stat_attack")
@@ -870,7 +919,10 @@ def create_monster(payload: MonsterCreate, db: Session = Depends(get_db)):
 def list_monsters(db: Session = Depends(get_db)):
     monsters = (
         db.query(models_db.Monster)
-        .options(joinedload(models_db.Monster.skill_categories))
+        .options(
+            joinedload(models_db.Monster.skill_categories),
+            joinedload(models_db.Monster.drops).joinedload(models_db.MonsterDrop.item_template),
+        )
         .order_by(models_db.Monster.level.asc(), models_db.Monster.id.asc())
         .all()
     )
@@ -881,12 +933,97 @@ def list_monsters(db: Session = Depends(get_db)):
 def get_monster(monster_id: int, db: Session = Depends(get_db)):
     monster = (
         db.query(models_db.Monster)
-        .options(joinedload(models_db.Monster.skill_categories))
+        .options(
+            joinedload(models_db.Monster.skill_categories),
+            joinedload(models_db.Monster.drops).joinedload(models_db.MonsterDrop.item_template),
+        )
         .get(monster_id)
     )
     if not monster:
         raise HTTPException(status_code=404, detail="怪物不存在")
     return serialize_monster(monster)
+
+
+@app.post("/api/monsters/{monster_id}/drops", response_model=MonsterDropOut, tags=["Monster"])
+def create_monster_drop(monster_id: int, payload: MonsterDropCreate, db: Session = Depends(get_db)):
+    monster = db.query(models_db.Monster).get(monster_id)
+    if not monster:
+        raise HTTPException(status_code=404, detail="怪物不存在")
+
+    item = db.query(models_db.ItemTemplate).get(payload.item_template_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="裝備模板不存在")
+
+    if payload.qty_min > payload.qty_max:
+        raise HTTPException(status_code=400, detail="qty_min 不可大於 qty_max")
+
+    existing = (
+        db.query(models_db.MonsterDrop)
+        .filter(
+            models_db.MonsterDrop.monster_id == monster_id,
+            models_db.MonsterDrop.item_template_id == payload.item_template_id,
+        )
+        .first()
+    )
+    if existing:
+        existing.drop_rate = payload.drop_rate
+        existing.qty_min = payload.qty_min
+        existing.qty_max = payload.qty_max
+        db.commit()
+        db.refresh(existing)
+        return MonsterDropOut(
+            monster_id=existing.monster_id,
+            item_template_id=existing.item_template_id,
+            drop_rate=float(existing.drop_rate),
+            qty_min=existing.qty_min,
+            qty_max=existing.qty_max,
+            item_template=item,
+        )
+
+    drop = models_db.MonsterDrop(
+        monster_id=monster_id,
+        item_template_id=payload.item_template_id,
+        drop_rate=payload.drop_rate,
+        qty_min=payload.qty_min,
+        qty_max=payload.qty_max,
+    )
+    db.add(drop)
+    db.commit()
+    db.refresh(drop)
+    return MonsterDropOut(
+        monster_id=drop.monster_id,
+        item_template_id=drop.item_template_id,
+        drop_rate=float(drop.drop_rate),
+        qty_min=drop.qty_min,
+        qty_max=drop.qty_max,
+        item_template=item,
+    )
+
+
+@app.get("/api/monsters/{monster_id}/drops", response_model=List[MonsterDropOut], tags=["Monster"])
+def list_monster_drops(monster_id: int, db: Session = Depends(get_db)):
+    monster = db.query(models_db.Monster).get(monster_id)
+    if not monster:
+        raise HTTPException(status_code=404, detail="怪物不存在")
+
+    drops = (
+        db.query(models_db.MonsterDrop)
+        .options(joinedload(models_db.MonsterDrop.item_template))
+        .filter(models_db.MonsterDrop.monster_id == monster_id)
+        .order_by(models_db.MonsterDrop.item_template_id.asc())
+        .all()
+    )
+    return [
+        MonsterDropOut(
+            monster_id=d.monster_id,
+            item_template_id=d.item_template_id,
+            drop_rate=float(d.drop_rate),
+            qty_min=d.qty_min,
+            qty_max=d.qty_max,
+            item_template=d.item_template,
+        )
+        for d in drops
+    ]
 
 
 # Dungeons
@@ -917,7 +1054,18 @@ def create_dungeon(payload: DungeonCreate, db: Session = Depends(get_db)):
 def list_dungeons(db: Session = Depends(get_db)):
     dungeons = (
         db.query(models_db.Dungeon)
-        .options(joinedload(models_db.Dungeon.boss).joinedload(models_db.Monster.skill_categories))
+        .options(
+            joinedload(models_db.Dungeon.boss)
+            .joinedload(models_db.Monster.skill_categories),
+            joinedload(models_db.Dungeon.boss)
+            .joinedload(models_db.Monster.drops)
+            .joinedload(models_db.MonsterDrop.item_template),
+            joinedload(models_db.Dungeon.monsters)
+            .joinedload(models_db.Monster.skill_categories),
+            joinedload(models_db.Dungeon.monsters)
+            .joinedload(models_db.Monster.drops)
+            .joinedload(models_db.MonsterDrop.item_template),
+        )
         .order_by(models_db.Dungeon.level_req.asc(), models_db.Dungeon.id.asc())
         .all()
     )
@@ -928,9 +1076,65 @@ def list_dungeons(db: Session = Depends(get_db)):
 def get_dungeon(dungeon_id: int, db: Session = Depends(get_db)):
     dungeon = (
         db.query(models_db.Dungeon)
-        .options(joinedload(models_db.Dungeon.boss).joinedload(models_db.Monster.skill_categories))
+        .options(
+            joinedload(models_db.Dungeon.boss)
+            .joinedload(models_db.Monster.skill_categories),
+            joinedload(models_db.Dungeon.boss)
+            .joinedload(models_db.Monster.drops)
+            .joinedload(models_db.MonsterDrop.item_template),
+            joinedload(models_db.Dungeon.monsters)
+            .joinedload(models_db.Monster.skill_categories),
+            joinedload(models_db.Dungeon.monsters)
+            .joinedload(models_db.Monster.drops)
+            .joinedload(models_db.MonsterDrop.item_template),
+        )
         .get(dungeon_id)
     )
     if not dungeon:
         raise HTTPException(status_code=404, detail="Dungeon 不存在")
+    return serialize_dungeon(dungeon)
+
+
+@app.post("/api/dungeons/{dungeon_id}/monsters", response_model=DungeonOut, tags=["Dungeon"])
+def attach_monster_to_dungeon(dungeon_id: int, payload: DungeonMonsterAttach, db: Session = Depends(get_db)):
+    dungeon = (
+        db.query(models_db.Dungeon)
+        .options(
+            joinedload(models_db.Dungeon.boss).joinedload(models_db.Monster.skill_categories),
+            joinedload(models_db.Dungeon.monsters).joinedload(models_db.Monster.skill_categories),
+        )
+        .get(dungeon_id)
+    )
+    if not dungeon:
+        raise HTTPException(status_code=404, detail="Dungeon 不存在")
+
+    monster = db.query(models_db.Monster).get(payload.monster_id)
+    if not monster:
+        raise HTTPException(status_code=404, detail="怪物不存在")
+
+    exists = (
+        db.query(models_db.DungeonMonster)
+        .filter(
+            models_db.DungeonMonster.dungeon_id == dungeon_id,
+            models_db.DungeonMonster.monster_id == payload.monster_id,
+        )
+        .first()
+    )
+    if not exists:
+        link = models_db.DungeonMonster(dungeon_id=dungeon_id, monster_id=payload.monster_id)
+        db.add(link)
+        db.commit()
+    else:
+        db.commit()
+
+    db.refresh(dungeon)
+    # reload monsters to reflect changes
+    dungeon = (
+        db.query(models_db.Dungeon)
+        .options(
+            joinedload(models_db.Dungeon.boss).joinedload(models_db.Monster.skill_categories),
+            joinedload(models_db.Dungeon.monsters).joinedload(models_db.Monster.skill_categories),
+        )
+        .get(dungeon_id)
+    )
     return serialize_dungeon(dungeon)

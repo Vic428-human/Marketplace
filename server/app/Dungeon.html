@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
@@ -56,24 +56,47 @@
             <a class="hover:text-white" href="AboutPage.html">世界觀與玩法</a>
           </nav>
           <div class="flex items-center gap-3">
+            <div id="userMenuWrapper" class="relative hidden sm:block z-50 overflow-visible">
             <button
               id="userMenuButton"
-              class="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-fuchsia-300 to-cyan-300 text-slate-900 font-semibold shadow-lg shadow-fuchsia-400/30 hover:shadow-pink-300/20 transition"
+              class="group flex items-center gap-3 px-4 py-2 rounded-2xl bg-slate-900/70 border border-slate-700/70 text-slate-100 font-semibold shadow-lg hover:border-cyan-300/60 transition focus:outline-none focus:ring-1 focus:ring-cyan-300/60"
             >
-              登入
+              <span id="userMenuAvatar" class="w-8 h-8 rounded-full bg-slate-800/80 border border-slate-600/60 flex items-center justify-center text-sm text-slate-300">◎</span>
+              <span id="userMenuLabel">登入</span>
+              <span id="userMenuArrow" class="hidden text-xs text-slate-500 group-hover:text-cyan-200">▾</span>
             </button>
+            <div
+              id="userDropdown"
+              class="hidden absolute right-0 mt-2 w-48 rounded-2xl border border-slate-800/80 bg-slate-900/95 shadow-2xl backdrop-blur-xl overflow-hidden z-50"
+            >
+              <a
+                id="personalCenterLink"
+                href="user_profiles.html"
+                class="block px-4 py-3 text-sm text-slate-100 hover:bg-slate-800/60"
+              >
+                個人中心
+              </a>
+              <button
+                id="logoutBtnDesktop"
+                class="w-full text-left px-4 py-3 text-sm text-rose-200 hover:bg-rose-500/10 border-t border-slate-800/70"
+              >
+                登出
+              </button>
+            </div>
             <button id="mobileMenuBtn" class="md:hidden px-3 py-2 rounded-xl bg-slate-800 text-slate-200 border border-slate-700 hover:border-cyan-300/70 transition" aria-label="開啟選單">
               <span class="block w-5 h-0.5 bg-slate-200 mb-1"></span>
               <span class="block w-5 h-0.5 bg-slate-200 mb-1"></span>
               <span class="block w-5 h-0.5 bg-slate-200"></span>
             </button>
           </div>
+          </div>
         </header>
       <div id="login-block" class="hidden">
         <div class="flex items-center justify-center min-h-[60vh]">
           <div class="text-center bg-gray-900/50 backdrop-blur-xl border border-indigo-500/30 rounded-2xl p-12 shadow-[0_0_30px_rgba(99,102,241,0.2)]">
             <h2 class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-pink-400 to-cyan-400 mb-4">請先登入</h2>
-            <p class="text-gray-400">登入後才能進入地下城冒險</p>
+            <p class="text-gray-400 mb-6">登入後才能進入地下城冒險</p>
+            <a href="login.html" class="inline-flex px-6 py-2 rounded-xl bg-gradient-to-r from-fuchsia-300 to-cyan-300 text-slate-900 font-semibold shadow-lg shadow-fuchsia-400/30 hover:shadow-pink-300/20 transition">前往登入</a>
           </div>
         </div>
       </div>
@@ -90,10 +113,61 @@
         <div id="dungeon-list"></div>
 
         <div id="battle-area" class="hidden bg-gray-900/50 backdrop-blur-xl border border-indigo-500/30 rounded-2xl p-8 shadow-[0_0_30px_rgba(99,102,241,0.2)]">
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+
+          <div id="encounter-select" class="mb-8 hidden">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <div class="text-indigo-300 text-sm">地城探索</div>
+                <div class="text-xl font-semibold text-white" id="dungeon-title"></div>
+                <div class="text-slate-400 text-sm" id="dungeon-subtitle"></div>
+              </div>
+              <button id="back-list-button" class="px-4 py-2 rounded-xl border border-slate-700 text-slate-200 hover:border-cyan-300/60 transition">返回地城列表</button>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4">
+                <div class="flex items-center gap-2 text-indigo-300 mb-3">
+                  <span class="text-lg">👥</span>
+                  <span>小怪區域</span>
+                </div>
+                <div id="mob-list" class="space-y-3"></div>
+                <div id="mob-empty" class="text-sm text-slate-400">尚未配置小怪。</div>
+              </div>
+              <div class="bg-slate-900/60 border border-rose-700/60 rounded-2xl p-4">
+              <div class="flex items-center gap-2 text-rose-200 mb-3">
+                <span class="text-lg">👑</span>
+                <span>BOSS 區域</span>
+              </div>
+              <div id="boss-card" class="border border-rose-500/40 rounded-xl p-4 bg-gradient-to-br from-rose-900/40 to-slate-900/40 cursor-pointer hover:border-rose-400/70 transition">
+                <div id="boss-empty" class="text-slate-400 text-sm hidden">尚未配置 BOSS。</div>
+                <div id="boss-info">
+                  <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center gap-2">
+                      <span class="text-3xl" id="boss-icon">👾</span>
+                      <div>
+                        <div class="text-white font-semibold" id="boss-name">Boss</div>
+                        <div class="text-slate-400 text-sm" id="boss-level">Lv.1</div>
+                      </div>
+                    </div>
+                    <div class="text-xs text-rose-200 border border-rose-500/60 px-2 py-1 rounded-full">BOSS</div>
+                  </div>
+                  <div class="flex items-center justify-between text-sm text-slate-200">
+                    <span class="flex items-center gap-1">❤️ <span id="boss-hp">-</span></span>
+                    <span class="flex items-center gap-1">⚔️ <span id="boss-atk">-</span></span>
+                  </div>
+                </div>
+              </div>
+              </div>
+            </div>
+            <div class="mt-4 flex justify-end">
+              <button id="start-battle-button" class="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-900 font-semibold shadow-lg hover:shadow-emerald-500/30 transition disabled:opacity-50 disabled:cursor-not-allowed">開始戰鬥</button>
+            </div>
+          </div>
+          <div class="bg-gray-800/50 border border-indigo-500/20 rounded-xl p-4 mb-6 max-h-40 overflow-y-auto custom-scrollbar" id="battle-log"></div>
+          <div id="battle-ui" class="hidden space-y-6">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div class="bg-gradient-to-br from-gray-800/50 to-gray-800/30 border border-indigo-500/20 rounded-xl p-6">
               <div class="text-center mb-4">
-                <div class="text-5xl mb-3" id="player-icon">🧝</div>
+                <div class="text-5xl mb-3 flex items-center justify-center" id="player-icon">🧝</div>
                 <div class="text-indigo-300 mb-2" id="player-name">玩家</div>
                 <div class="text-gray-400" id="player-level">Lv.85</div>
               </div>
@@ -102,15 +176,48 @@
                   <span class="text-gray-400">HP</span>
                   <span class="text-emerald-400" id="player-hp-text">100/100</span>
                 </div>
+                
                 <div class="h-3 bg-gray-700/50 rounded-full overflow-hidden">
                   <div id="player-hp-bar" class="h-full bg-gradient-to-r from-emerald-500 to-cyan-500 transition-all duration-500" style="width: 100%"></div>
+                </div>
+                <div class="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <div class="rounded-xl border border-slate-700/70 bg-slate-900/50 px-3 py-2 text-center">
+                    <div class="text-[11px] uppercase tracking-[0.08em] text-slate-400 flex items-center justify-center gap-1">
+                      <span>⚔️</span><span>攻擊</span>
+                    </div>
+                    <div id="statAtk" class="text-lg font-semibold text-amber-200">-</div>
+                  </div>
+                  <div class="rounded-xl border border-slate-700/70 bg-slate-900/50 px-3 py-2 text-center">
+                    <div class="text-[11px] uppercase tracking-[0.08em] text-slate-400 flex items-center justify-center gap-1">
+                      <span>🛡️</span><span>防禦</span>
+                    </div>
+                    <div id="statDef" class="text-lg font-semibold text-cyan-200">-</div>
+                  </div>
+                  <div class="rounded-xl border border-slate-700/70 bg-slate-900/50 px-3 py-2 text-center">
+                    <div class="text-[11px] uppercase tracking-[0.08em] text-slate-400 flex items-center justify-center gap-1">
+                      <span>🌀</span><span>敏捷</span>
+                    </div>
+                    <div id="statAgi" class="text-lg font-semibold text-fuchsia-200">-</div>
+                  </div>
+                  <div class="rounded-xl border border-slate-700/70 bg-slate-900/50 px-3 py-2 text-center">
+                    <div class="text-[11px] uppercase tracking-[0.08em] text-slate-400 flex items-center justify-center gap-1">
+                      <span>✨</span><span>智力</span>
+                    </div>
+                    <div id="statInt" class="text-lg font-semibold text-indigo-200">-</div>
+                  </div>
+                  <div class="rounded-xl border border-slate-700/70 bg-slate-900/50 px-3 py-2 text-center">
+                    <div class="text-[11px] uppercase tracking-[0.08em] text-slate-400 flex items-center justify-center gap-1">
+                      <span>🍀</span><span>幸運</span>
+                    </div>
+                    <div id="statLuk" class="text-lg font-semibold text-pink-200">-</div>
+                  </div>
                 </div>
               </div>
             </div>
 
             <div class="bg-gradient-to-br from-gray-800/50 to-gray-800/30 border border-red-500/20 rounded-xl p-6">
               <div class="text-center mb-4">
-                <div class="text-5xl mb-3" id="monster-icon">👹</div>
+                <div class="text-5xl mb-3 flex items-center justify-center" id="monster-icon">👹</div>
                 <div class="text-red-300 mb-2" id="monster-name">魔王</div>
                 <div class="text-gray-400" id="monster-level">Lv.1</div>
               </div>
@@ -122,12 +229,24 @@
                 <div class="h-3 bg-gray-700/50 rounded-full overflow-hidden">
                   <div id="monster-hp-bar" class="h-full bg-gradient-to-r from-red-500 to-orange-500 transition-all duration-500" style="width: 100%"></div>
                 </div>
+                <div class="flex justify-between text-sm mt-2 text-slate-300">
+                  <span>攻擊</span>
+                  <span id="monster-atk-text" class="text-red-200">-</span>
+                </div>
               </div>
             </div>
           </div>
 
-          <div class="bg-gray-800/50 border border-indigo-500/20 rounded-xl p-4 mb-6 max-h-40 overflow-y-auto custom-scrollbar" id="battle-log"></div>
-
+          <div class="bg-gradient-to-br from-gray-800/50 to-gray-800/30 border border-slate-700/60 rounded-2xl p-5">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-cyan-300/80"></span>
+                <div class="text-sm text-slate-200 font-semibold">裝備欄</div>
+              </div>
+              <a href="user_profiles.html" id="equip-count" class="text-xs text-slate-400 hover:text-cyan-200">0 / 8</a>
+            </div>
+            <div id="equip-list" class="grid grid-cols-2 gap-3 text-sm text-slate-200"></div>
+          </div>
           <div id="battle-result" class="space-y-6 hidden">
             <div id="win-panel" class="hidden bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 border border-emerald-400/50 rounded-xl p-6 text-center">
               <div class="text-4xl mb-3">🏆</div>
@@ -150,27 +269,164 @@
             </div>
 
             <div class="flex gap-4">
-              <button id="back-button" class="flex-1 px-6 py-3 bg-gradient-to-r from-indigo-600 to-pink-600 text-white rounded-lg hover:from-indigo-500 hover:to-pink-500 transition-all duration-300 shadow-[0_0_20px_rgba(99,102,241,0.5)]">返回冒險列表</button>
+              <button id="back-button" class="flex-1 px-6 py-3 bg-gradient-to-r from-indigo-600 to-pink-600 text-white rounded-lg hover:from-indigo-500 hover:to-pink-500 transition-all duration-300 shadow-[0_0_20px_rgba(99,102,241,0.5)]">返回怪物列表</button>
               <button id="replay-button" class="hidden flex-1 px-6 py-3 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white rounded-lg hover:from-emerald-500 hover:to-cyan-500 transition-all duration-300 shadow-[0_0_20px_rgba(16,185,129,0.5)]">再戰一場</button>
             </div>
           </div>
+          </div> <!-- end battle-ui -->
         </div>
       </div>
     </div>
 
   <script>
-    const isLoggedIn = true;      // 若需測試未登入畫面，改為 false
-    const userName = '勇者';       // 玩家名稱
-    const playerLevel = 85;        // 玩家等級
+    const API_BASE = 'https://built-spelling-conduct-providence.trycloudflare.com';
+    const NGROK_BYPASS_HEADER = { 'ngrok-skip-browser-warning': 'true' };
+    async function fetchJSON(path, options = {}) {
+      const url = `${API_BASE || ''}${path}`;
+      const headers = { ...(options.headers || {}), ...NGROK_BYPASS_HEADER };
+      if (options.body && !(options.body instanceof FormData)) {
+        headers['Content-Type'] = 'application/json';
+      }
+      const res = await fetch(url, {
+        method: options.method || 'GET',
+        headers,
+        body: options.body && !(options.body instanceof FormData) ? JSON.stringify(options.body) : options.body,
+      });
+      const text = await res.text();
+      let data = null;
+      try { data = text ? JSON.parse(text) : null; } catch { /* ignore */ }
+      if (!res.ok) throw new Error((data && data.detail) || res.statusText || 'Request failed');
+      return data;
+    }
+    const rawUser = localStorage.getItem('virtual_exchange_user') || localStorage.getItem('user_profile');
+    const sessionUser = rawUser ? JSON.parse(rawUser) : null;
+    const isLoggedIn = !!sessionUser; // true 表示已登入
+    const userName = sessionUser?.username || sessionUser?.discord_name || sessionUser?.email || '勇者';
+    const playerLevel = sessionUser?.level || 1;
+    const userMenuWrapper = document.getElementById('userMenuWrapper');
+    const userMenuButton = document.getElementById('userMenuButton');
+    const userMenuLabel = document.getElementById('userMenuLabel');
+    const userMenuAvatar = document.getElementById('userMenuAvatar');
+    const userMenuArrow = document.getElementById('userMenuArrow');
+    const userDropdown = document.getElementById('userDropdown');
+    const personalCenterLink = document.getElementById('personalCenterLink');
+    const logoutBtnDesktop = document.getElementById('logoutBtnDesktop');
+    const mobileLoginLink = document.getElementById('loginLinkMobile');
+    const mobileLogoutBtn = document.getElementById('logoutBtnMobile');
+      const mobileUserCard = document.getElementById('mobileUserCard');
+      const mobileUserName = document.getElementById('mobileUserName');
+      const mobileUserId = document.getElementById('mobileUserId');
+    const guestButtonClass =
+        "flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-fuchsia-400 to-cyan-300 text-slate-900 font-semibold shadow-lg shadow-fuchsia-500/30 hover:scale-[1.02] transition";
+      const userButtonClass =
+        "flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900/70 border border-slate-700 text-slate-100 font-semibold shadow-lg hover:border-cyan-300/60 transition";
+    let cachedUser = sessionUser || null;
+    let dropdownTimer = null;
+    function applyUserState() {
+        if (!cachedUser) {
+          try {
+            const raw = localStorage.getItem('virtual_exchange_user') || localStorage.getItem('user_profile');
+            if (raw) cachedUser = JSON.parse(raw);
+          } catch {}
+        }
+        if (!cachedUser) {
+          clearUserState();
+          return;
+        }
+        const name = cachedUser.discord_name || cachedUser.email || cachedUser.discord_id || '已登入';
+        if (userMenuLabel) userMenuLabel.textContent = name;
+        if (userMenuAvatar) {
+          userMenuAvatar.textContent = (name || '用戶').trim().charAt(0) || '用';
+          userMenuAvatar.classList.remove('hidden');
+        }
+        if (userMenuButton) userMenuButton.className = userButtonClass;
+        if (userMenuArrow) userMenuArrow.classList.remove('hidden');
+        if (personalCenterLink) personalCenterLink.classList.remove('hidden');
+        if (mobileLoginLink) {
+          mobileLoginLink.classList.add('hidden');
+        }
+        if (mobileUserCard) mobileUserCard.classList.remove('hidden');
+        if (mobileUserName) mobileUserName.textContent = name || '用戶';
+        if (mobileUserId) mobileUserId.textContent = cachedUser.discord_id ? `ID #${cachedUser.discord_id}` : 'ID #-';
+        if (mobileLogoutBtn) mobileLogoutBtn.classList.remove('hidden');
+        hideUserDropdown();
+      }
+      function clearUserState() {
+        cachedUser = null;
+        if (userMenuLabel) userMenuLabel.textContent = '登入';
+        if (userMenuAvatar) {
+          userMenuAvatar.textContent = '';
+          userMenuAvatar.classList.add('hidden');
+        }
+        if (userMenuButton) userMenuButton.className = guestButtonClass;
+        if (userMenuArrow) userMenuArrow.classList.add('hidden');
+        if (userDropdown) userDropdown.classList.add('hidden');
+        if (personalCenterLink) personalCenterLink.classList.add('hidden');
+        if (mobileLoginLink) {
+          mobileLoginLink.textContent = '登入';
+          mobileLoginLink.href = 'login.html';
+          mobileLoginLink.classList.remove('hidden');
+        }
+        if (mobileLogoutBtn) mobileLogoutBtn.classList.add('hidden');
+        if (mobileUserCard) mobileUserCard.classList.add('hidden');
+      }
 
-    const dungeons = [
-      { id: '1', name: '初心者森林', level: 1, difficulty: 'easy', monster: { name: '史萊姆王', icon: '🟢', hp: 50, attack: 5 }, rewards: { exp: 100, gold: 50 }, requiredLevel: 1 },
-      { id: '2', name: '幽冥洞穴', level: 20, difficulty: 'normal', monster: { name: '骷髏領主', icon: '💀', hp: 150, attack: 15 }, rewards: { exp: 500, gold: 200 }, requiredLevel: 15 },
-      { id: '3', name: '熔岩山谷', level: 40, difficulty: 'normal', monster: { name: '熔岩巨人', icon: '🔥', hp: 300, attack: 30 }, rewards: { exp: 1500, gold: 500 }, requiredLevel: 35 },
-      { id: '4', name: '暴風神殿', level: 60, difficulty: 'hard', monster: { name: '風暴龍', icon: '🐉', hp: 500, attack: 50 }, rewards: { exp: 3000, gold: 1000 }, requiredLevel: 55 },
-      { id: '5', name: '暗影深淵', level: 80, difficulty: 'hard', monster: { name: '暗影領主', icon: '🕷️', hp: 800, attack: 75 }, rewards: { exp: 5000, gold: 2000 }, requiredLevel: 75 },
-      { id: '6', name: '混沌之巢', level: 100, difficulty: 'nightmare', monster: { name: '混沌魔君', icon: '👁️', hp: 1500, attack: 100 }, rewards: { exp: 10000, gold: 5000 }, requiredLevel: 95 },
-    ];
+      function logoutUser() {
+        localStorage.removeItem('virtual_exchange_user');
+        clearUserState();
+        window.location.href = 'index.html';
+      }
+      function showUserDropdown() {
+        if (!cachedUser || !userDropdown) return;
+        if (dropdownTimer) clearTimeout(dropdownTimer);
+        userDropdown.classList.remove('hidden');
+      }
+
+      function hideUserDropdown() {
+        if (!userDropdown) return;
+        if (dropdownTimer) clearTimeout(dropdownTimer);
+        dropdownTimer = setTimeout(() => userDropdown.classList.add('hidden'), 120);
+      }
+
+      clearUserState();
+      applyUserState();
+      const mobileBtn = document.getElementById('mobileMenuBtn');
+      const mobileMenu = document.getElementById('mobileMenu');
+      const mobilePanel = document.getElementById('mobilePanel');
+      const mobileOverlay = document.getElementById('mobileOverlay');
+      const logoutDesktop = document.getElementById('logoutBtnDesktop');
+      const logoutMobile = document.getElementById('logoutBtnMobile');
+    if (logoutDesktop) logoutDesktop.addEventListener('click', logoutUser);
+    if (logoutMobile) logoutMobile.addEventListener('click', logoutUser);
+
+    if (userMenuWrapper) {
+        userMenuWrapper.addEventListener('mouseenter', showUserDropdown);
+        userMenuWrapper.addEventListener('mouseleave', hideUserDropdown);
+    }
+
+    if (userMenuButton) {
+        // hover 也展開
+        userMenuButton.addEventListener('mouseenter', showUserDropdown);
+        userMenuButton.addEventListener('click', () => {
+          if (!cachedUser) {
+            window.location.href = 'login.html';
+            return;
+          }
+          if (userDropdown?.classList.contains('hidden')) {
+            showUserDropdown();
+          } else {
+            hideUserDropdown();
+          }
+        });
+    }
+    if (userDropdown) {
+        userDropdown.addEventListener('mouseenter', showUserDropdown);
+        userDropdown.addEventListener('mouseleave', hideUserDropdown);
+    }
+      
+    let dungeons = [];
+    let isLoading = false;
+    let loadError = '';
 
     const difficultyText = { easy: '簡單', normal: '一般', hard: '困難', nightmare: '夢魘' };
     const rarityStyles = {
@@ -179,6 +435,31 @@
       rare: { bg: 'from-blue-500/30 to-cyan-500/30', border: 'border-blue-400/50', text: 'text-blue-400' },
       common: { bg: 'from-gray-500/30 to-gray-600/30', border: 'border-gray-400/50', text: 'text-gray-300' },
     };
+    function iconMarkup(icon, sizeClass = 'text-xl') {
+      const imgSize =
+        sizeClass === 'text-5xl' ? 'w-16 h-16' :
+        sizeClass === 'text-3xl' ? 'w-12 h-12' :
+        'w-9 h-9';
+      if (icon && /^https?:\/\//.test(icon)) {
+        return `<span class="inline-flex items-center justify-center"><img src="${icon}" class="${imgSize} object-contain" alt="icon" /></span>`;
+      }
+      return `<span class="inline-flex items-center justify-center ${sizeClass} leading-none">${icon || '👾'}</span>`;
+    }
+
+    function slotLabel(slot) {
+      const map = {
+        WEAPON: '武器',
+        SHIELD: '盾牌',
+        ARMOR: '防具',
+        HEAD: '頭盔',
+        CLOAK: '披風',
+        RING: '戒指',
+        ACCESSORY: '飾品',
+        MISC: '其他',
+      };
+      const key = (slot || '').toString().toUpperCase();
+      return map[key] || '其他';
+    }
 
     let selectedDungeon = null;
     let battleResult = null;
@@ -189,6 +470,7 @@
     let battleInterval = null;
     let monsterTimeout = null;
     let isBattling = false;
+    let selectedTarget = null;
 
     const loginBlock = document.getElementById('login-block');
     const dungeonBlock = document.getElementById('dungeon-block');
@@ -202,7 +484,25 @@
     const dropList = document.getElementById('drop-list');
     const rewardText = document.getElementById('reward-text');
     const replayButton = document.getElementById('replay-button');
-    const backButton = document.getElementById('back-button');
+    const mobList = document.getElementById('mob-list');
+    const mobEmpty = document.getElementById('mob-empty');
+    const encounterSelect = document.getElementById('encounter-select');
+    const startBattleButton = document.getElementById('start-battle-button');
+    const backListButton = document.getElementById('back-list-button');
+    const backButtons = document.querySelectorAll('#back-button');
+    const dungeonTitle = document.getElementById('dungeon-title');
+    const dungeonSubtitle = document.getElementById('dungeon-subtitle');
+    const bossCard = document.getElementById('boss-card');
+    const bossIcon = document.getElementById('boss-icon');
+    const bossName = document.getElementById('boss-name');
+    const bossLevel = document.getElementById('boss-level');
+    const bossHp = document.getElementById('boss-hp');
+    const bossAtk = document.getElementById('boss-atk');
+    const bossEmpty = document.getElementById('boss-empty');
+    const bossInfo = document.getElementById('boss-info');
+    const equipList = document.getElementById('equip-list');
+    const equipCountEl = document.getElementById('equip-count');
+    const itemTemplateCache = {};
 
     const playerNameEl = document.getElementById('player-name');
     const playerLevelEl = document.getElementById('player-level');
@@ -214,6 +514,11 @@
     const monsterHpText = document.getElementById('monster-hp-text');
     const monsterHpBar = document.getElementById('monster-hp-bar');
     const monsterIconEl = document.getElementById('monster-icon');
+    const statAtk = document.getElementById("statAtk");
+    const statDef = document.getElementById("statDef");
+    const statAgi = document.getElementById("statAgi");
+    const statInt = document.getElementById("statInt");
+    const statLuk = document.getElementById("statLuk");
 
     function difficultyColors(difficulty) {
       switch (difficulty) {
@@ -226,45 +531,53 @@
     }
 
     function renderDungeonCards() {
+      if (isLoading) {
+        dungeonList.innerHTML = '<div class="text-center text-slate-300">載入地城中...</div>';
+        return;
+      }
+      if (loadError) {
+        dungeonList.innerHTML = `<div class="text-center text-red-400">載入失敗：${loadError}</div>`;
+        return;
+      }
+      if (!dungeons.length) {
+        dungeonList.innerHTML = '<div class="text-center text-slate-400">目前沒有地城資料。</div>';
+        return;
+      }
       const wrapper = document.createElement('div');
       wrapper.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6';
 
       dungeons.forEach((dungeon) => {
         const colors = difficultyColors(dungeon.difficulty);
-        const locked = playerLevel < dungeon.requiredLevel;
+        const boss = dungeon.boss || {};
+        const locked = playerLevel < dungeon.level_req;
         const card = document.createElement('div');
         card.className = `bg-gray-900/50 backdrop-blur-xl border ${colors.border} rounded-2xl p-6 shadow-[0_0_30px_rgba(99,102,241,0.2)] hover:shadow-[0_0_40px_rgba(99,102,241,0.3)] transition-all cursor-pointer group ${locked ? 'opacity-50' : ''}`;
+        const mobCount = Array.isArray(dungeon.monsters) ? dungeon.monsters.length : 0;
+        const bossCount = boss && (boss.name || boss.id) ? 1 : 0;
         card.innerHTML = `
-          <div class="text-6xl text-center mb-4 group-hover:scale-110 transition-transform">${dungeon.monster.icon}</div>
+          <div class="text-6xl text-center mb-4 group-hover:scale-110 transition-transform">${dungeon.icon || '🗺️'}</div>
           <h3 class="text-indigo-300 text-center mb-2 group-hover:text-indigo-200 transition-colors">${dungeon.name}</h3>
           <div class="flex items-center justify-center gap-2 mb-4">
-            <span class="text-gray-400">Lv.${dungeon.level}</span>
-            <span class="text-gray-500">|</span>
+            <span class="text-gray-400">Lv.${dungeon.level_req}</span>
+            <span class="text-gray-500">•</span>
             <span class="${colors.text}">${difficultyText[dungeon.difficulty]}</span>
           </div>
-          <div class="bg-gray-800/50 border border-indigo-500/20 rounded-lg p-3 mb-4">
-            <div class="text-gray-400 mb-2">Boss: ${dungeon.monster.name}</div>
-            <div class="flex justify-between text-sm">
-              <div class="flex items-center gap-1"><span>❤️</span><span class="text-gray-300">${dungeon.monster.hp}</span></div>
-              <div class="flex items-center gap-1"><span>⚔️</span><span class="text-gray-300">${dungeon.monster.attack}</span></div>
-            </div>
+          <div class="bg-slate-900/60 border border-slate-700/70 rounded-lg p-3 mb-2 flex items-center justify-between text-sm">
+            <span class="text-slate-300">小怪: ${mobCount}</span>
+            <span class="text-rose-300">BOSS: ${bossCount}</span>
           </div>
-          <div class="flex justify-between items-center">
-            <div class="text-emerald-400">+${dungeon.rewards.exp} EXP</div>
-            <div class="text-yellow-400">${dungeon.rewards.gold} Z</div>
-          </div>
-          ${locked ? `<div class="mt-3 text-center text-red-400 text-sm">需求等級 ${dungeon.requiredLevel}</div>` : `
-            <div class="mt-3 flex items-center justify-center gap-2 text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity">
+          ${locked ? `<div class="mt-2 text-center text-red-400 text-sm">需求等級 ${dungeon.level_req}</div>` : `
+            <div class="mt-2 flex items-center justify-center gap-2 text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity">
               <span>進入戰鬥</span><span>›</span>
             </div>`}
         `;
 
         card.addEventListener('click', () => {
           if (locked) {
-            alert(`需要等級 ${dungeon.requiredLevel} 才能進入此地城`);
+            alert(`需要等級 ${dungeon.level_req} 才能進入此地城`);
             return;
           }
-          startBattle(dungeon);
+          openDungeon(dungeon);
         });
 
         wrapper.appendChild(card);
@@ -308,14 +621,105 @@
         name: `${prefix}${itemType.name}`,
         rarity,
         stats,
-        value: baseStats * multiplier * 1000,
         icon: itemType.icon,
+        slot_type: 'MISC',
       };
+    }
+
+    function pickDropsFromTarget(target) {
+      const drops = [];
+      const dropDefs = Array.isArray(target?.drops) ? target.drops : [];
+      dropDefs.forEach((d) => {
+        const rate = typeof d.drop_rate === 'number' ? d.drop_rate : 0;
+        if (Math.random() > rate) return;
+        const qtyMin = d.qty_min ?? 1;
+        const qtyMax = d.qty_max ?? qtyMin;
+        const qty = Math.max(qtyMin, Math.floor(Math.random() * (qtyMax - qtyMin + 1)) + qtyMin);
+        const tmpl = d.item_template || {};
+        const rarity = (tmpl.rarity || 'COMMON').toLowerCase();
+        const stats = {
+          attack: tmpl.stat_attack || 0,
+          defense: tmpl.stat_defense || 0,
+          agility: tmpl.stat_agility || 0,
+          intelligence: tmpl.stat_intelligence || 0,
+          luck: tmpl.stat_luck || 0,
+        };
+        for (let i = 0; i < qty; i++) {
+          drops.push({
+            id: `${Date.now()}-${Math.random()}`,
+            name: tmpl.name || '未知物品',
+            rarity: rarity === 'legendary' || rarity === 'epic' || rarity === 'rare' ? rarity : 'common',
+            stats,
+            icon: '🎁',
+            slot_type: tmpl.slot_type || 'MISC',
+          });
+        }
+      });
+      return drops;
     }
 
     function pushLog(text) {
       battleLog.push(text);
       renderLogs();
+    }
+
+    function renderEquipmentPanel() {
+      if (!equipList) return;
+      const slots = [
+        { key: 'WEAPON', label: '武器' },
+        { key: 'SHIELD', label: '盾牌' },
+        { key: 'ARMOR', label: '鎧甲' },
+        { key: 'CLOAK', label: '披風' },
+        { key: 'HEAD', label: '頭飾' },
+        { key: 'RING', label: '戒指' },
+        { key: 'ACCESSORY1', label: '飾品1' },
+        { key: 'ACCESSORY2', label: '飾品2' },
+      ];
+      const equips = Array.isArray(cachedUser?.equipment) ? cachedUser.equipment : [];
+      const bySlot = {};
+      equips.forEach((item) => {
+        if (!item?.slot_type) return;
+        const key = item.slot_type.toString().toUpperCase();
+        // 若只有一個 ACCESSORY，填到 ACCESSORY1
+        if (key === 'ACCESSORY' && !bySlot['ACCESSORY1']) {
+          bySlot['ACCESSORY1'] = item;
+        } else {
+          bySlot[key] = item;
+        }
+      });
+      equipList.innerHTML = '';
+      slots.forEach((slot) => {
+        const item = bySlot[slot.key];
+        const name = item?.name || '未裝備';
+        const rarity = (item?.rarity || '').toString().toLowerCase();
+        const color =
+          rarity === 'legendary' ? 'text-yellow-300' :
+          rarity === 'epic' ? 'text-purple-300' :
+          rarity === 'rare' ? 'text-blue-300' :
+          'text-slate-200';
+        const card = document.createElement('div');
+        card.className = 'rounded-xl border border-slate-800 bg-slate-900/40 px-4 py-3 flex flex-col gap-1';
+        card.innerHTML = `
+          <div class="text-slate-100 font-semibold">${slot.label}</div>
+          <div class="text-slate-400 ${item ? color : ''}">${name}</div>
+        `;
+        equipList.appendChild(card);
+      });
+      const equippedCount = Object.values(bySlot).filter(Boolean).length;
+      if (equipCountEl) equipCountEl.textContent = `${equippedCount} / ${slots.length}`;
+    }
+
+    function renderPlayerStats() {
+      const atk = cachedUser?.stat_attack ?? null;
+      const defs = cachedUser?.stat_defense ?? null;
+      const agi = cachedUser?.stat_agility ?? null;
+      const intl = cachedUser?.stat_int ?? null;
+      const luk = cachedUser?.stat_luk ?? null;
+      if (statAtk) statAtk.textContent = atk !== null ? atk : '-';
+      if (statDef) statDef.textContent = defs !== null ? defs : '-';
+      if (statAgi) statAgi.textContent = agi !== null ? agi : '-';
+      if (statInt) statInt.textContent = intl !== null ? intl : '-';
+      if (statLuk) statLuk.textContent = luk !== null ? luk : '-';
     }
 
     function renderLogs() {
@@ -339,22 +743,63 @@
 
     function renderBattleState() {
       if (!selectedDungeon) return;
+      const boss = selectedDungeon._battleBoss || selectedTarget || selectedDungeon.boss || {};
+      const bossMaxHp = boss.hp ?? boss.max_hp ?? 50;
+      const bossLevelVal = boss.level ?? selectedDungeon.level_req ?? 1;
+      const bossAtkVal = boss.attack ?? boss.atk ?? 0;
       playerNameEl.textContent = userName;
       playerLevelEl.textContent = `Lv.${playerLevel}`;
-      playerHpText.textContent = `${playerHP}/100`;
-      playerHpBar.style.width = `${playerHP}%`;
+      playerHpText.textContent = `${Math.max(0, playerHP)}/100`;
+      playerHpBar.style.width = `${Math.max(0, playerHP)}%`;
+      renderPlayerStats();
 
-      monsterNameEl.textContent = selectedDungeon.monster.name;
-      monsterLevelEl.textContent = `Lv.${selectedDungeon.level}`;
-      monsterHpText.textContent = `${Math.max(0, monsterHP)}/${selectedDungeon.monster.hp}`;
-      const monsterPercent = Math.max(0, (monsterHP / selectedDungeon.monster.hp) * 100);
+      monsterNameEl.textContent = boss.name || 'Boss';
+      monsterLevelEl.textContent = `Lv.${bossLevelVal}`;
+      monsterHpText.textContent = `${Math.max(0, monsterHP)}/${bossMaxHp}`;
+      const monsterPercent = bossMaxHp ? Math.max(0, (monsterHP / bossMaxHp) * 100) : 0;
       monsterHpBar.style.width = `${monsterPercent}%`;
-      monsterIconEl.textContent = selectedDungeon.monster.icon;
+      monsterIconEl.innerHTML = iconMarkup(boss.icon || selectedDungeon.icon, 'text-5xl');
+      const monsterAtkText = document.getElementById('monster-atk-text');
+      if (monsterAtkText) monsterAtkText.textContent = bossAtkVal;
+    }
+
+    function setSelectedTarget(target) {
+      selectedTarget = target;
+      startBattleButton.disabled = !selectedTarget;
+    }
+
+    function renderMobList(dungeon) {
+      if (!mobList || !mobEmpty) return;
+      const mobs = (dungeon?.monsters) || [];
+      if (!mobs.length) {
+        mobList.innerHTML = '';
+        mobEmpty.classList.remove('hidden');
+        return;
+      }
+      mobEmpty.classList.add('hidden');
+      mobList.innerHTML = '';
+      mobs.forEach((mob) => {
+        const card = document.createElement('div');
+        card.className = 'border border-slate-700/60 rounded-lg px-3 py-3 bg-slate-900/40 hover:border-indigo-400/70 cursor-pointer transition';
+            card.innerHTML = `
+      <div class="flex items-center justify-between text-sm text-slate-200 mb-1">
+        <span class="flex items-center gap-2">${iconMarkup(mob.icon, 'text-xl')}${mob.name || '小怪'}</span>
+        <span class="text-slate-400">Lv.${mob.level ?? 1}</span>
+      </div>
+      <div class="flex items-center justify-between text-xs text-slate-400">
+        <span class="flex items-center gap-1">❤️ <span>${mob.hp ?? '-'}</span></span>
+        <span class="flex items-center gap-1">⚔️ <span>${mob.attack ?? '-'}</span></span>
+      </div>
+    `;
+
+        card.addEventListener('click', () => setSelectedTarget({ ...mob, icon: mob.icon || '👾', isBoss: false }));
+        mobList.appendChild(card);
+      });
     }
 
     function renderDrops() {
-      if (!droppedItems.length) return;
       dropList.innerHTML = '';
+      if (!droppedItems.length) return;
       droppedItems.forEach((item) => {
         const style = rarityStyles[item.rarity];
         const card = document.createElement('div');
@@ -364,7 +809,7 @@
             <div class="text-3xl">${item.icon}</div>
             <div>
               <div class="${style.text}">${item.name}</div>
-              <div class="text-yellow-400 text-sm">${item.value.toLocaleString()} Z</div>
+              <div class="text-slate-300 text-sm">類型：${slotLabel(item.slot_type)}</div>
             </div>
           </div>
           <div class="text-gray-400 text-sm space-y-1">
@@ -379,37 +824,116 @@
       });
     }
 
-    function startBattle(dungeon) {
-      clearInterval(battleInterval);
-      clearTimeout(monsterTimeout);
+    function openDungeon(dungeon) {
       selectedDungeon = dungeon;
-      battleResult = null;
-      droppedItems = [];
-      playerHP = 100;
-      monsterHP = dungeon.monster.hp;
-      battleLog = [`進入 ${dungeon.name}...`, `遭遇 ${dungeon.monster.name}！`];
-      isBattling = true;
-
-      dungeonList.classList.add('hidden');
-      battleArea.classList.remove('hidden');
+      selectedTarget = null;
+      startBattleButton.disabled = true;
+      encounterSelect.classList.remove('hidden');
+      document.getElementById('battle-ui')?.classList.add('hidden');
+      battleLogBox.classList.add('hidden');
       battleResultBox.classList.add('hidden');
       dropSection.classList.add('hidden');
       winPanel.classList.add('hidden');
       losePanel.classList.add('hidden');
       replayButton.classList.add('hidden');
 
+      const hasBoss = !!(dungeon.boss && (dungeon.boss.name || dungeon.boss.id || dungeon.boss.hp));
+      if (hasBoss) {
+        const boss = dungeon.boss;
+        bossEmpty.classList.add('hidden');
+        bossInfo.classList.remove('hidden');
+        bossIcon.innerHTML = iconMarkup(boss.icon, 'text-3xl');
+        bossName.textContent = boss.name || 'Boss';
+        bossLevel.textContent = `Lv.${boss.level || 1}`;
+        bossHp.textContent = boss.hp ?? '-';
+        bossAtk.textContent = boss.attack ?? '-';
+
+        bossCard.onclick = () => setSelectedTarget({ ...boss, isBoss: true });
+      } else {
+        bossEmpty.classList.remove('hidden');
+        bossInfo.classList.add('hidden');
+        bossCard.onclick = () => setSelectedTarget(null);
+      }
+
+      dungeonTitle.textContent = dungeon.name || '地城';
+      dungeonSubtitle.textContent = '選擇要挑戰的怪物';
+      renderMobList(dungeon);
+
+      dungeonList.classList.add('hidden');
+      battleArea.classList.remove('hidden');
+      renderBattleState();
+    }
+
+    function startBattle() {
+      if (!selectedDungeon || !selectedTarget) {
+        alert('請先選擇怪物或 Boss');
+        return;
+      }
+      clearInterval(battleInterval);
+      clearTimeout(monsterTimeout);
+      const battleBoss = selectedTarget;
+      selectedDungeon._battleBoss = battleBoss;
+      battleResult = null;
+      droppedItems = [];
+      playerHP = 100;
+      monsterHP = battleBoss.hp ?? battleBoss.max_hp ?? 50;
+      battleLog = [`進入 ${selectedDungeon.name}...`, `遭遇 ${battleBoss.name}！`];
+      isBattling = true;
+
+      encounterSelect.classList.add('hidden');
+      battleResultBox.classList.add('hidden');
+      dropSection.classList.add('hidden');
+      winPanel.classList.add('hidden');
+      losePanel.classList.add('hidden');
+      replayButton.classList.add('hidden');
+      battleLogBox.classList.remove('hidden');
+      document.getElementById('battle-ui')?.classList.remove('hidden');
+
       renderBattleState();
       renderLogs();
 
-      setTimeout(() => simulateBattle(dungeon), 600);
+      setTimeout(() => simulateBattle(selectedDungeon), 600);
+    }
+
+    function getPlayerStats() {
+      return {
+        atk: Number(cachedUser?.stat_attack ?? 10),
+        def: Number(cachedUser?.stat_defense ?? 0),
+        agi: Number(cachedUser?.stat_agility ?? 0),
+        int: Number(cachedUser?.stat_int ?? 0),
+        luk: Number(cachedUser?.stat_luk ?? 0),
+      };
+    }
+
+    function playerDamageRoll(target) {
+      const { atk, luk } = getPlayerStats();
+      const base = Math.max(1, Math.floor(atk)); // 能力值 1 就打 1
+      const critChance = Math.min(0.5, Math.max(0, luk) / 100); // 每點幸運 +1%，上限 50%
+      const isCrit = Math.random() < critChance;
+      const dmg = base;
+      return isCrit ? Math.floor(dmg * 1.5) : dmg;
+    }
+
+    function monsterDamageRoll(boss) {
+      const { def } = getPlayerStats();
+      const atk = Math.max(1, Math.floor(boss.attack ?? 1));
+      const dmgBeforeDef = atk;
+      const reduced = Math.max(1, dmgBeforeDef - Math.floor(def * 0.4));
+      return reduced;
     }
 
     function simulateBattle(dungeon) {
       let pHP = 100;
-      let mHP = dungeon.monster.hp;
+      const battleBoss = dungeon._battleBoss || dungeon.boss || {
+        name: 'Boss',
+        level: dungeon.level_req || 1,
+        hp: 50,
+        attack: 10,
+      };
+      let mHP = battleBoss.hp ?? battleBoss.max_hp ?? 50;
 
       battleInterval = setInterval(() => {
-        const playerDamage = Math.floor(Math.random() * 20) + 15;
+        const playerDamage = playerDamageRoll(battleBoss);
         mHP -= playerDamage;
         monsterHP = mHP;
         pushLog(`你造成了 ${playerDamage} 點傷害！`);
@@ -421,10 +945,10 @@
         }
 
         monsterTimeout = setTimeout(() => {
-          const monsterDamage = Math.floor(Math.random() * dungeon.monster.attack) + 5;
+          const monsterDamage = monsterDamageRoll(battleBoss);
           pHP -= monsterDamage;
           playerHP = Math.max(0, pHP);
-          pushLog(`${dungeon.monster.name} 對你造成了 ${monsterDamage} 點傷害！`);
+          pushLog(`${battleBoss.name || 'Boss'} 對你造成了 ${monsterDamage} 點傷害！`);
           renderBattleState();
 
           if (pHP <= 0) {
@@ -440,19 +964,23 @@
       isBattling = false;
       battleResult = result;
       renderLogs();
+      const battleBoss = dungeon._battleBoss || dungeon.boss || { name: 'Boss', level: dungeon.level_req || 1 };
 
       battleResultBox.classList.remove('hidden');
       if (result === 'win') {
         winPanel.classList.remove('hidden');
         losePanel.classList.add('hidden');
-        rewardText.innerHTML = `<div>獲得 ${dungeon.rewards.exp} EXP</div><div>獲得 ${dungeon.rewards.gold} Z</div>`;
+        rewardText.innerHTML = `<div>擊敗 ${battleBoss.name || 'Boss'}</div>`;
 
-        const drops = [];
-        const count = Math.floor(Math.random() * 3) + 1;
-        for (let i = 0; i < count; i++) drops.push(generateRandomDrop(dungeon.level));
+        const drops = pickDropsFromTarget(battleBoss);
         droppedItems = drops;
-        dropSection.classList.remove('hidden');
-        renderDrops();
+        dropList.innerHTML = '';
+        if (droppedItems.length) {
+          dropSection.classList.remove('hidden');
+          renderDrops();
+        } else {
+          dropSection.classList.add('hidden');
+        }
         replayButton.classList.remove('hidden');
       } else {
         losePanel.classList.remove('hidden');
@@ -462,32 +990,152 @@
       }
     }
 
-    function resetBattle() {
+    function resetBattle(goToDungeonList = false) {
       clearInterval(battleInterval);
       clearTimeout(monsterTimeout);
-      selectedDungeon = null;
+      isBattling = false;
       battleResult = null;
       droppedItems = [];
       battleLog = [];
-      battleArea.classList.add('hidden');
-      dungeonList.classList.remove('hidden');
-    }
+      selectedTarget = null;
+      startBattleButton.disabled = true;
+      selectedDungeon._battleBoss = null;
 
-    backButton.addEventListener('click', resetBattle);
-    replayButton.addEventListener('click', () => selectedDungeon && startBattle(selectedDungeon));
+      // 回到地城內的選怪畫面
+      battleResultBox.classList.add('hidden');
+      dropSection.classList.add('hidden');
+      winPanel.classList.add('hidden');
+      losePanel.classList.add('hidden');
+      replayButton.classList.add('hidden');
+      battleLogBox.classList.add('hidden');
+      document.getElementById('battle-ui')?.classList.add('hidden');
 
-    function init() {
-      if (!isLoggedIn) {
-        loginBlock.classList.remove('hidden');
-        dungeonBlock.classList.add('hidden');
+      if (goToDungeonList) {
+        selectedDungeon = null;
+        encounterSelect.classList.add('hidden');
+        battleArea.classList.add('hidden');
+        dungeonList.classList.remove('hidden');
         return;
       }
-      loginBlock.classList.add('hidden');
-      dungeonBlock.classList.remove('hidden');
-      renderDungeonCards();
+
+      if (selectedDungeon) {
+        encounterSelect.classList.remove('hidden');
+        battleArea.classList.remove('hidden');
+        renderBattleState();
+      } else {
+        // 若沒有已選地城，回列表
+        battleArea.classList.add('hidden');
+        dungeonList.classList.remove('hidden');
+      }
     }
 
+    // remove single backButton binding (handled above)
+    replayButton.addEventListener('click', () => selectedDungeon && startBattle());
+    startBattleButton.addEventListener('click', () => startBattle());
+    bossCard?.addEventListener('click', () => setSelectedTarget(selectedDungeon?.boss));
+
+    async function loadDungeons() {
+      try {
+        isLoading = true;
+        loadError = '';
+        renderDungeonCards();
+        const data = await fetchJSON('/api/dungeons');
+        dungeons = Array.isArray(data) ? data : [];
+      } catch (err) {
+        loadError = err?.message || '未知錯誤';
+      } finally {
+        isLoading = false;
+        renderDungeonCards();
+      }
+    }
+
+    async function getItemTemplate(id) {
+      if (!id) return null;
+      if (itemTemplateCache[id]) return itemTemplateCache[id];
+      try {
+        const tpl = await fetchJSON(`/api/item-templates/${id}`);
+        itemTemplateCache[id] = tpl;
+        return tpl;
+      } catch (err) {
+        return null;
+      }
+    }
+
+    async function enrichEquip(equipArr) {
+      if (!Array.isArray(equipArr)) return [];
+      const tasks = equipArr.map(async (eq) => {
+        if (!eq?.id) return eq;
+        const tpl = await getItemTemplate(eq.id);
+        if (!tpl) return eq;
+        return {
+          ...eq,
+          name: tpl.name || eq.name,
+          rarity: tpl.rarity ? tpl.rarity.toLowerCase() : eq.rarity,
+          slot_type: tpl.slot_type || eq.slot_type,
+        };
+      });
+      return Promise.all(tasks);
+    }
+
+    async function loadUserEquipment() {
+      if (!cachedUser?.discord_id) return;
+      const buildEquipFromIds = (u) => {
+        if (!u) return [];
+        const pairs = [
+          { key: 'WEAPON', field: 'equip_weapon_id', label: '武器' },
+          { key: 'SHIELD', field: 'equip_shield_id', label: '盾牌' },
+          { key: 'ARMOR', field: 'equip_armor_id', label: '鎧甲' },
+          { key: 'CLOAK', field: 'equip_cloak_id', label: '披風' },
+          { key: 'HEAD', field: 'equip_head_id', label: '頭飾' },
+          { key: 'RING', field: 'equip_ring_id', label: '戒指' },
+          { key: 'ACCESSORY1', field: 'equip_acc1_id', label: '飾品1' },
+          { key: 'ACCESSORY2', field: 'equip_acc2_id', label: '飾品2' },
+        ];
+        return pairs
+          .filter((p) => u[p.field])
+          .map((p) => ({
+            id: u[p.field],
+            slot_type: p.key,
+            name: `裝備 ID ${u[p.field]}`,
+            rarity: 'common',
+          }));
+      };
+      try {
+        const data = await fetchJSON(`/api/users/${cachedUser.discord_id}`);
+        if (data) {
+          const equipFromIds = buildEquipFromIds(data);
+          const baseEquip = Array.isArray(data.equipment) && data.equipment.length
+            ? data.equipment
+            : equipFromIds;
+          const mergedEquip = await enrichEquip(baseEquip);
+          cachedUser = { ...(cachedUser || {}), ...data, equipment: mergedEquip };
+          renderEquipmentPanel();
+          renderPlayerStats();
+        }
+      } catch (err) {
+        console.warn('載入裝備失敗', err);
+      }
+    }
+
+    async function init() {
+  if (!isLoggedIn) {
+    loginBlock.classList.remove('hidden');
+    dungeonBlock.classList.add('hidden');
+    return;
+  }
+
+  loginBlock.classList.add('hidden');
+  dungeonBlock.classList.remove('hidden');
+
+  await loadUserEquipment(); // ← 現在可以 await
+  loadDungeons();
+}
+
     init();
+
+    // Back buttons
+    backButtons.forEach((btn) => btn.addEventListener('click', () => resetBattle(false)));
+    backListButton?.addEventListener('click', () => resetBattle(true));
   </script>
 </body>
 </html>

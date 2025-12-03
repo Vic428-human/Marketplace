@@ -24,14 +24,15 @@ class UserProfile(Base):
     stat_agility: Mapped[int] = mapped_column(Integer, default=0)
     stat_int: Mapped[int] = mapped_column(Integer, default=0)
     stat_luk: Mapped[int] = mapped_column(Integer, default=0)
-    equip_weapon_id = Column(Integer, ForeignKey("inventory_items.id"), nullable=True)
-    equip_shield_id = Column(Integer, ForeignKey("inventory_items.id"), nullable=True)
-    equip_armor_id = Column(Integer, ForeignKey("inventory_items.id"), nullable=True)
-    equip_cloak_id = Column(Integer, ForeignKey("inventory_items.id"), nullable=True)
-    equip_head_id = Column(Integer, ForeignKey("inventory_items.id"), nullable=True)
-    equip_ring_id = Column(Integer, ForeignKey("inventory_items.id"), nullable=True)
-    equip_acc1_id = Column(Integer, ForeignKey("inventory_items.id"), nullable=True)
-    equip_acc2_id = Column(Integer, ForeignKey("inventory_items.id"), nullable=True)
+    # 儲存裝備模板 ID（不再指向 inventory_items）
+    equip_weapon_id = Column(Integer, ForeignKey("item_templates.id"), nullable=True)
+    equip_shield_id = Column(Integer, ForeignKey("item_templates.id"), nullable=True)
+    equip_armor_id = Column(Integer, ForeignKey("item_templates.id"), nullable=True)
+    equip_cloak_id = Column(Integer, ForeignKey("item_templates.id"), nullable=True)
+    equip_head_id = Column(Integer, ForeignKey("item_templates.id"), nullable=True)
+    equip_ring_id = Column(Integer, ForeignKey("item_templates.id"), nullable=True)
+    equip_acc1_id = Column(Integer, ForeignKey("item_templates.id"), nullable=True)
+    equip_acc2_id = Column(Integer, ForeignKey("item_templates.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
@@ -161,6 +162,18 @@ class MonsterSkillCategory(Base):
     skill_category_id: Mapped[int] = mapped_column(ForeignKey("skill_categories.id"), primary_key=True)
 
 
+class MonsterDrop(Base):
+    __tablename__ = "monster_drops"
+    monster_id: Mapped[int] = mapped_column(ForeignKey("monsters.id"), primary_key=True)
+    item_template_id: Mapped[int] = mapped_column(ForeignKey("item_templates.id"), primary_key=True)
+    drop_rate: Mapped[float] = mapped_column(Numeric(5, 4), nullable=False)  # 0.0000 ~ 1.0000
+    qty_min: Mapped[int] = mapped_column(Integer, default=1)
+    qty_max: Mapped[int] = mapped_column(Integer, default=1)
+
+    monster: Mapped["Monster"] = relationship("Monster", back_populates="drops")
+    item_template: Mapped["ItemTemplate"] = relationship("ItemTemplate")
+
+
 class Monster(Base):
     __tablename__ = "monsters"
 
@@ -172,6 +185,7 @@ class Monster(Base):
     attack: Mapped[int] = mapped_column(Integer, default=0)
     hp: Mapped[int] = mapped_column(Integer, default=0)
     defense: Mapped[int] = mapped_column(Integer, default=0)
+    icon: Mapped[str | None] = mapped_column(String(255))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
@@ -180,6 +194,16 @@ class Monster(Base):
         "SkillCategory",
         secondary="monster_skill_categories",
         backref="monsters",
+    )
+    drops: Mapped[List["MonsterDrop"]] = relationship(
+        "MonsterDrop",
+        back_populates="monster",
+        cascade="all, delete-orphan",
+    )
+    dungeons: Mapped[List["Dungeon"]] = relationship(
+        "Dungeon",
+        secondary="dungeon_monsters",
+        back_populates="monsters",
     )
 
 
@@ -197,3 +221,14 @@ class Dungeon(Base):
     )
 
     boss: Mapped["Monster"] = relationship("Monster")
+    monsters: Mapped[List["Monster"]] = relationship(
+        "Monster",
+        secondary="dungeon_monsters",
+        back_populates="dungeons",
+    )
+
+
+class DungeonMonster(Base):
+    __tablename__ = "dungeon_monsters"
+    dungeon_id: Mapped[int] = mapped_column(ForeignKey("dungeons.id"), primary_key=True)
+    monster_id: Mapped[int] = mapped_column(ForeignKey("monsters.id"), primary_key=True)
