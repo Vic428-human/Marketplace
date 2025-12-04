@@ -460,12 +460,12 @@
             </div>
             <div id="bagGrid" class="grid grid-cols-3 sm:grid-cols-4 gap-3"></div>
             <div class="grid grid-cols-2 gap-3 pt-2">
-              <button class="py-2.5 rounded-xl bg-gradient-to-r from-fuchsia-500 to-cyan-400 text-slate-900 font-semibold shadow-lg shadow-fuchsia-500/30 hover:scale-[1.01] transition text-sm">
+              <!--<button class="py-2.5 rounded-xl bg-gradient-to-r from-fuchsia-500 to-cyan-400 text-slate-900 font-semibold shadow-lg shadow-fuchsia-500/30 hover:scale-[1.01] transition text-sm">
                 分解
               </button>
               <button class="py-2.5 rounded-xl bg-gradient-to-r from-emerald-400 to-lime-300 text-slate-900 font-semibold shadow-lg shadow-emerald-500/30 hover:scale-[1.01] transition text-sm">
                 販售
-              </button>
+              </button>-->
             </div>
           </div>
         </div>
@@ -490,9 +490,10 @@
           </div>
         </div>
         <div class="mt-4 modal-stat-list" id="equipModalStats"></div>
-        <div class="mt-5 grid grid-cols-2 gap-3">
-          <button id="equipModalAction" class="btn-equip py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-orange-400 text-slate-900 font-semibold shadow-lg shadow-rose-500/30">裝備</button>
-          <button class="btn-equip py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-fuchsia-400 text-slate-100 font-semibold shadow-lg shadow-indigo-500/30">強化</button>
+        <div class="mt-5">
+          <button id="equipModalAction" class="btn-equip w-full py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-orange-400 text-slate-900 font-semibold shadow-lg shadow-rose-500/30">裝備</button>
+          <!-- 強化暫時隱藏 -->
+          <!-- <button class="btn-equip py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-fuchsia-400 text-slate-100 font-semibold shadow-lg shadow-indigo-500/30">強化</button> -->
         </div>
       </div>
     </div>
@@ -917,6 +918,9 @@
           cell.addEventListener("click", () => {
             selectedBagItemId = selectedBagItemId === item.id ? null : item.id;
             renderBagUI(inventory);
+            const slotUpper = (item.slot_type || "").toUpperCase();
+            const equipable = EQUIP_SLOTS.some((s) => s.slot_type === slotUpper);
+            if (!equipable) return; // 類別為「其他」或無對應槽位時不開啟裝備視窗
             renderEquipModal(item);
           });
           fragment.appendChild(cell);
@@ -946,35 +950,47 @@
       }
 
       async function loadInventory() {
-        if (!currentUser) return;
-        const summary = await fetchJSON(`/api/inventory/${encodeURIComponent(currentUser.discord_id)}/summary`);
-        const items = Array.isArray(summary?.items) ? summary.items : [];
-        const normalized = items
-          .map((it) => normalizeInventoryItem(it))
-          .filter((it) => (it.qty || 0) > 0);
-        inventory = normalized;
-        if (profile) {
-          const mapped = EQUIP_SLOTS.map((slot) => {
-            const idKey = `equip_${slot.key}_id`;
-            const targetId = profile[idKey];
-            return targetId ? normalized.find((it) => it.id === targetId) || null : null;
-          });
-          const allNull = mapped.every((x) => !x);
-          equippedSlots = allNull ? new Array(EQUIP_SLOTS.length).fill(null) : mapped;
-        } else if (equippedSlots.every((x) => !x)) {
-          equippedSlots = buildEquippedFromInventory(normalized);
-        } else {
-          // 清掉已不存在的
-          equippedSlots = equippedSlots.map((eq) => (eq && normalized.find((it) => it.id === eq.id)) || null);
-        }
-        const equipItems = equippedSlots;
-        renderEquipUI(equipItems);
-        renderBagUI(normalized);
-        if (summary && typeof summary.total_qty === "number") {
-          const cap = summary.capacity || 500;
-          bagCount.textContent = `${summary.total_qty} / ${cap}`;
-        }
-      }
+  if (!currentUser) return;
+  const summary = await fetchJSON(`/api/inventory/${encodeURIComponent(currentUser.discord_id)}/summary`);
+  const items = Array.isArray(summary?.items) ? summary.items : [];
+  const normalized = items
+    .map((it) => normalizeInventoryItem(it))
+    .filter((it) => (it.qty || 0) > 0);
+  inventory = normalized;
+
+  if (profile) {
+    const mapped = EQUIP_SLOTS.map((slot) => {
+      const idKey = `equip_${slot.key}_id`;   // 例如 equip_weapon_id
+      const targetTemplateId = profile[idKey]; // 這是 template_id
+
+      if (!targetTemplateId) return null;
+
+      // 用 template_id 對應到背包中的實際 item
+      return (
+        normalized.find((it) => it.item_template_id === targetTemplateId) ||
+        null
+      );
+    });
+
+    const allNull = mapped.every((x) => !x);
+    equippedSlots = allNull ? new Array(EQUIP_SLOTS.length).fill(null) : mapped;
+  } else if (equippedSlots.every((x) => !x)) {
+    equippedSlots = buildEquippedFromInventory(normalized);
+  } else {
+    // 清掉已不存在的
+    equippedSlots = equippedSlots.map((eq) => (eq && normalized.find((it) => it.id === eq.id)) || null);
+  }
+
+  const equipItems = equippedSlots;
+  renderEquipUI(equipItems);
+  renderBagUI(normalized);
+
+  if (summary && typeof summary.total_qty === "number") {
+    const cap = summary.capacity || 500;
+    bagCount.textContent = `${summary.total_qty} / ${cap}`;
+  }
+}
+
 
       function setupMobileMenu() {
         if (!mobileMenuBtn || !mobileMenu || !mobilePanel || !mobileOverlay) return;
@@ -998,29 +1014,42 @@
         window.location.href = "index.html";
       }
 
+      // 前端 user_profiles.html 內
+
       async function persistEquipment() {
-        if (!currentUser) return;
-        const tpl = (slot) => slot?.item_template_id || slot?.template_id || slot?.item_template?.id || null;
-        const payload = {
-          weapon_template_id: tpl(equippedSlots[0]),
-          shield_template_id: tpl(equippedSlots[1]),
-          armor_template_id: tpl(equippedSlots[2]),
-          cloak_template_id: tpl(equippedSlots[3]),
-          head_template_id: tpl(equippedSlots[4]),
-          ring_template_id: tpl(equippedSlots[5]),
-          acc1_template_id: tpl(equippedSlots[6]),
-          acc2_template_id: tpl(equippedSlots[7]),
-        };
-        try {
-          const updated = await fetchJSON(`/api/users/${encodeURIComponent(currentUser.discord_id)}/equipment`, {
-            method: "POST",
-            body: payload,
-          });
-          profile = updated;
-        } catch (err) {
-          // 若失敗，暫不阻斷前端行為
-        }
+  if (!currentUser) return;
+
+  // 從 normalizeInventoryItem 可以確定有 item_template_id 欄位 :contentReference[oaicite:8]{index=8}
+  const tmplId = (slot) =>
+    slot ? slot.item_template_id || slot.template_id || null : null;
+
+  const payload = {
+    weapon_template_id: tmplId(equippedSlots[0]),
+    shield_template_id: tmplId(equippedSlots[1]),
+    armor_template_id: tmplId(equippedSlots[2]),
+    cloak_template_id: tmplId(equippedSlots[3]),
+    head_template_id: tmplId(equippedSlots[4]),
+    ring_template_id: tmplId(equippedSlots[5]),
+    acc1_template_id: tmplId(equippedSlots[6]),
+    acc2_template_id: tmplId(equippedSlots[7]),
+  };
+
+  try {
+    const updated = await fetchJSON(
+      `/api/users/${encodeURIComponent(currentUser.discord_id)}/equipment`,
+      {
+        method: "POST",
+        body: payload,
       }
+    );
+    profile = updated;
+    renderProfileUI();  // ★ 新增這行：用最新 profile 重畫能力值 / 等級 / exp 等
+  } catch (err) {
+    console.error("儲存裝備失敗", err);
+  }
+}
+
+
 
       async function submitStatPoints() {
         if (!profile || !currentUser) return;

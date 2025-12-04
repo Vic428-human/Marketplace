@@ -377,7 +377,6 @@ def match_order(db: Session, order: models_db.Order) -> None:
                 if order.locked_amount < 0:
                     order.locked_amount = Decimal("0")
 
-
 # 建立道具模板
 @app.post("/api/item-templates", response_model=ItemTemplateOut, tags=["Item"])
 def create_item_template(payload: ItemTemplateCreate, db: Session = Depends(get_db)):
@@ -443,10 +442,40 @@ def create_order(
             if available < deposit:
                 raise HTTPException(status_code=400, detail="餘額不足，無法掛賣單（保證金不足）")
 
+            # 先鎖住背包那一格
             inv_row = get_inventory_row(db, user.discord_id, payload.item_template_id)
             if not inv_row or inv_row.qty < payload.qty:
+                # 基本數量不夠，直接擋掉
                 raise HTTPException(status_code=400, detail="背包數量不足，無法掛賣單")
 
+            # 🔴 新增：扣掉「已裝備」的數量後，才是可賣的數量
+            equip_ids = [
+                user.equip_weapon_id,
+                user.equip_shield_id,
+                user.equip_armor_id,
+                user.equip_cloak_id,
+                user.equip_head_id,
+                user.equip_ring_id,
+                user.equip_acc1_id,
+                user.equip_acc2_id,
+            ]
+            equipped_count = sum(1 for eid in equip_ids if eid == payload.item_template_id)
+
+            # inv_row.qty 是總數（包含裝備中 + 背包裡）
+            sellable_qty = inv_row.qty - equipped_count
+
+            if sellable_qty < payload.qty:
+                # 有被裝備，而且你想賣的量會把「裝備中的那件」一起賣掉，就不給掛
+                if equipped_count > 0:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="此裝備已裝備中，可掛單數量不足，請先卸下或調整數量",
+                    )
+                else:
+                    # 理論上不會走到這裡，保險一下
+                    raise HTTPException(status_code=400, detail="背包數量不足，無法掛賣單")
+
+            # 通過檢查後，再真的扣背包數量 & 冻结保證金
             wallet.frozen_balance = wallet.frozen_balance + deposit
             inv_row.qty = inv_row.qty - payload.qty
             locked_amount = deposit
@@ -842,47 +871,45 @@ def get_readme_txt():
     return Response(content, media_type="text/plain; charset=utf-8")
 
 
-def validate_ownership(db: Session, discord_id: str, item_id: int | None) -> int | None:
-    if item_id is None:
+def validate_ownership(db: Session, discord_id: str, template_id: int | None) -> int | None:
+    """
+    檢查玩家是否持有指定的 item_template_id（qty > 0）。
+    user_profiles.equip_*_id 目前 FK -> item_templates.id，所以這裡回傳 template_id 即可。
+    """
+    if template_id is None:
         return None
+
     inv = (
         db.query(models_db.InventoryItem)
-        .filter(models_db.InventoryItem.id == item_id, models_db.InventoryItem.discord_id == discord_id)
+        .filter(
+            models_db.InventoryItem.discord_id == discord_id,
+            models_db.InventoryItem.item_template_id == template_id,
+            models_db.InventoryItem.qty > 0,
+        )
         .first()
     )
     if not inv:
-        raise HTTPException(status_code=400, detail=f"Item {item_id} 不存在或不屬於此玩家")
-    return item_id
+        raise HTTPException(
+            status_code=400,
+            detail=f"玩家背包沒有模板 {template_id} 的道具",
+        )
+
+    # FK 指向 item_templates.id
+    return template_id
 
 
 @app.post("/api/users/{discord_id}/equipment", response_model=UserProfileOut, tags=["User"])
 def update_equipment(
     discord_id: str,
-    payload: UserEquipmentUpdate,
+    payload: UserEquipmentUpdate,  # *_template_id
     db: Session = Depends(get_db),
     current_user: models_db.UserProfile = Depends(get_current_user),
 ):
     ensure_same_user(current_user, discord_id)
     user = ensure_user(db, discord_id)
-    def resolve_template(template_id: int | None):
-        """Equip directly by item_template_id (UserProfile now stores模板ID)."""
-        if template_id is None:
-            return None
-        tmpl = db.get(models_db.ItemTemplate, template_id)
-        if not tmpl:
-            raise HTTPException(status_code=400, detail=f"Item template {template_id} 不存在")
-        return template_id
 
-    user.equip_weapon_id = resolve_template(payload.weapon_template_id)
-    user.equip_shield_id = resolve_template(payload.shield_template_id)
-    user.equip_armor_id = resolve_template(payload.armor_template_id)
-    user.equip_cloak_id = resolve_template(payload.cloak_template_id)
-    user.equip_head_id = resolve_template(payload.head_template_id)
-    user.equip_ring_id = resolve_template(payload.ring_template_id)
-    user.equip_acc1_id = resolve_template(payload.acc1_template_id)
-    user.equip_acc2_id = resolve_template(payload.acc2_template_id)
-
-    equipped_ids = [
+    # ------- 0) 先計算「舊裝備加成」來推回角色基礎能力 -------
+    old_equip_ids = [
         user.equip_weapon_id,
         user.equip_shield_id,
         user.equip_armor_id,
@@ -892,27 +919,91 @@ def update_equipment(
         user.equip_acc1_id,
         user.equip_acc2_id,
     ]
-    equipped_ids = [i for i in equipped_ids if i]
-    if equipped_ids:
-        items = db.query(models_db.ItemTemplate).filter(models_db.ItemTemplate.id.in_(equipped_ids)).all()
+    old_equip_ids = [eid for eid in old_equip_ids if eid]
+
+    if old_equip_ids:
+        old_templates = (
+            db.query(models_db.ItemTemplate)
+            .filter(models_db.ItemTemplate.id.in_(old_equip_ids))
+            .all()
+        )
     else:
-        items = []
+        old_templates = []
 
-    def sum_stat(key: str) -> int:
-        total = 0
-        for it in items:
-            total += int(getattr(it, key, 0) or 0)
-        return total
+    def sum_stat_from(templates, key: str) -> int:
+        return sum(int(getattr(t, key, 0) or 0) for t in templates)
 
-    user.stat_attack = sum_stat("stat_attack")
-    user.stat_defense = sum_stat("stat_defense")
-    user.stat_agility = sum_stat("stat_agility")
-    user.stat_int = sum_stat("stat_intelligence")
-    user.stat_luk = sum_stat("stat_luck")
+    old_bonus_atk = sum_stat_from(old_templates, "stat_attack")
+    old_bonus_def = sum_stat_from(old_templates, "stat_defense")
+    old_bonus_agi = sum_stat_from(old_templates, "stat_agility")
+    old_bonus_int = sum_stat_from(old_templates, "stat_intelligence")
+    old_bonus_luk = sum_stat_from(old_templates, "stat_luck")
+
+    # 角色原本的基礎能力 = 目前 stat - 舊裝備加成
+    base_atk = int(user.stat_attack or 0) - old_bonus_atk
+    base_def = int(user.stat_defense or 0) - old_bonus_def
+    base_agi = int(user.stat_agility or 0) - old_bonus_agi
+    base_int = int(user.stat_int or 0) - old_bonus_int
+    base_luk = int(user.stat_luk or 0) - old_bonus_luk
+
+    # 避免出現負數（理論上不太會，但防一下）
+    base_atk = max(base_atk, 0)
+    base_def = max(base_def, 0)
+    base_agi = max(base_agi, 0)
+    base_int = max(base_int, 0)
+    base_luk = max(base_luk, 0)
+
+    # ------- 1) 儲存「裝備模板 ID」到 user_profiles（FK -> item_templates.id） -------
+    user.equip_weapon_id = validate_ownership(db, discord_id, payload.weapon_template_id)
+    user.equip_shield_id = validate_ownership(db, discord_id, payload.shield_template_id)
+    user.equip_armor_id  = validate_ownership(db, discord_id, payload.armor_template_id)
+    user.equip_cloak_id  = validate_ownership(db, discord_id, payload.cloak_template_id)
+    user.equip_head_id   = validate_ownership(db, discord_id, payload.head_template_id)
+    user.equip_ring_id   = validate_ownership(db, discord_id, payload.ring_template_id)
+    user.equip_acc1_id   = validate_ownership(db, discord_id, payload.acc1_template_id)
+    user.equip_acc2_id   = validate_ownership(db, discord_id, payload.acc2_template_id)
+
+    # ------- 2) 用「新裝備模板」來計算新的裝備加成 -------
+    new_equip_ids = [
+        user.equip_weapon_id,
+        user.equip_shield_id,
+        user.equip_armor_id,
+        user.equip_cloak_id,
+        user.equip_head_id,
+        user.equip_ring_id,
+        user.equip_acc1_id,
+        user.equip_acc2_id,
+    ]
+    new_equip_ids = [eid for eid in new_equip_ids if eid]
+
+    if new_equip_ids:
+        new_templates = (
+            db.query(models_db.ItemTemplate)
+            .filter(models_db.ItemTemplate.id.in_(new_equip_ids))
+            .all()
+        )
+    else:
+        new_templates = []
+
+    new_bonus_atk = sum_stat_from(new_templates, "stat_attack")
+    new_bonus_def = sum_stat_from(new_templates, "stat_defense")
+    new_bonus_agi = sum_stat_from(new_templates, "stat_agility")
+    new_bonus_int = sum_stat_from(new_templates, "stat_intelligence")
+    new_bonus_luk = sum_stat_from(new_templates, "stat_luck")
+
+    # ------- 3) 最終能力 = 基礎能力 + 新裝備加成 -------
+    user.stat_attack  = base_atk + new_bonus_atk
+    user.stat_defense = base_def + new_bonus_def
+    user.stat_agility = base_agi + new_bonus_agi
+    user.stat_int     = base_int + new_bonus_int
+    user.stat_luk     = base_luk + new_bonus_luk
 
     db.commit()
     db.refresh(user)
     return user_to_out(user)
+
+
+
 
 
 @app.post("/api/wallet/topup", response_model=WalletOut, tags=["Wallet"])

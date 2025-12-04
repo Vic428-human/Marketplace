@@ -6,6 +6,7 @@ from sqlalchemy import String, Integer, Numeric, ForeignKey, DateTime, Text, Col
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .db import Base
+from typing import Optional
 
 
 class UserProfile(Base):
@@ -26,14 +27,14 @@ class UserProfile(Base):
     stat_int: Mapped[int] = mapped_column(Integer, default=0)
     stat_luk: Mapped[int] = mapped_column(Integer, default=0)
     # 儲存裝備模板 ID（不再指向 inventory_items）
-    equip_weapon_id = Column(Integer, ForeignKey("item_templates.id"), nullable=True)
-    equip_shield_id = Column(Integer, ForeignKey("item_templates.id"), nullable=True)
-    equip_armor_id = Column(Integer, ForeignKey("item_templates.id"), nullable=True)
-    equip_cloak_id = Column(Integer, ForeignKey("item_templates.id"), nullable=True)
-    equip_head_id = Column(Integer, ForeignKey("item_templates.id"), nullable=True)
-    equip_ring_id = Column(Integer, ForeignKey("item_templates.id"), nullable=True)
-    equip_acc1_id = Column(Integer, ForeignKey("item_templates.id"), nullable=True)
-    equip_acc2_id = Column(Integer, ForeignKey("item_templates.id"), nullable=True)
+    equip_weapon_id = Column(Integer, ForeignKey("inventory_items.id"), nullable=True)
+    equip_shield_id = Column(Integer, ForeignKey("inventory_items.id"), nullable=True)
+    equip_armor_id  = Column(Integer, ForeignKey("inventory_items.id"), nullable=True)
+    equip_cloak_id  = Column(Integer, ForeignKey("inventory_items.id"), nullable=True)
+    equip_head_id   = Column(Integer, ForeignKey("inventory_items.id"), nullable=True)
+    equip_ring_id   = Column(Integer, ForeignKey("inventory_items.id"), nullable=True)
+    equip_acc1_id   = Column(Integer, ForeignKey("inventory_items.id"), nullable=True)
+    equip_acc2_id   = Column(Integer, ForeignKey("inventory_items.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
@@ -233,3 +234,4 @@ class DungeonMonster(Base):
     __tablename__ = "dungeon_monsters"
     dungeon_id: Mapped[int] = mapped_column(ForeignKey("dungeons.id"), primary_key=True)
     monster_id: Mapped[int] = mapped_column(ForeignKey("monsters.id"), primary_key=True)
+

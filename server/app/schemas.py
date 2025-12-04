@@ -149,21 +149,13 @@ class InventoryGrantIn(BaseModel):
 
 
 class UserEquipmentUpdate(BaseModel):
-    weapon_id: Optional[int] = None
     weapon_template_id: Optional[int] = None
-    shield_id: Optional[int] = None
     shield_template_id: Optional[int] = None
-    armor_id: Optional[int] = None
     armor_template_id: Optional[int] = None
-    cloak_id: Optional[int] = None
     cloak_template_id: Optional[int] = None
-    head_id: Optional[int] = None
     head_template_id: Optional[int] = None
-    ring_id: Optional[int] = None
     ring_template_id: Optional[int] = None
-    acc1_id: Optional[int] = None
     acc1_template_id: Optional[int] = None
-    acc2_id: Optional[int] = None
     acc2_template_id: Optional[int] = None
 
 
