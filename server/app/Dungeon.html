@@ -284,6 +284,8 @@
     async function fetchJSON(path, options = {}) {
       const url = `${API_BASE || ''}${path}`;
       const headers = { ...(options.headers || {}), ...NGROK_BYPASS_HEADER };
+      const token = localStorage.getItem('ve_token');
+      if (token) headers['Authorization'] = `Bearer ${token}`;
       if (options.body && !(options.body instanceof FormData)) {
         headers['Content-Type'] = 'application/json';
       }
@@ -292,6 +294,11 @@
         headers,
         body: options.body && !(options.body instanceof FormData) ? JSON.stringify(options.body) : options.body,
       });
+      if (res.status === 401) {
+        localStorage.removeItem('ve_token');
+        window.location.href = 'login.html';
+        throw new Error('請先登入');
+      }
       const text = await res.text();
       let data = null;
       try { data = text ? JSON.parse(text) : null; } catch { /* ignore */ }
@@ -373,6 +380,7 @@
 
       function logoutUser() {
         localStorage.removeItem('virtual_exchange_user');
+        localStorage.removeItem('ve_token');
         clearUserState();
         window.location.href = 'index.html';
       }
@@ -636,6 +644,7 @@
         const qtyMax = d.qty_max ?? qtyMin;
         const qty = Math.max(qtyMin, Math.floor(Math.random() * (qtyMax - qtyMin + 1)) + qtyMin);
         const tmpl = d.item_template || {};
+        const templateId = d.item_template_id || tmpl.id;
         const rarity = (tmpl.rarity || 'COMMON').toLowerCase();
         const stats = {
           attack: tmpl.stat_attack || 0,
@@ -644,16 +653,16 @@
           intelligence: tmpl.stat_intelligence || 0,
           luck: tmpl.stat_luck || 0,
         };
-        for (let i = 0; i < qty; i++) {
-          drops.push({
-            id: `${Date.now()}-${Math.random()}`,
-            name: tmpl.name || '未知物品',
-            rarity: rarity === 'legendary' || rarity === 'epic' || rarity === 'rare' ? rarity : 'common',
-            stats,
-            icon: '🎁',
-            slot_type: tmpl.slot_type || 'MISC',
-          });
-        }
+        drops.push({
+          id: `${Date.now()}-${Math.random()}`,
+          item_template_id: templateId,
+          qty,
+          name: tmpl.name || '未知物品',
+          rarity: rarity === 'legendary' || rarity === 'epic' || rarity === 'rare' ? rarity : 'common',
+          stats,
+          icon: tmpl.icon || '🎁',
+          slot_type: tmpl.slot_type || 'MISC',
+        });
       });
       return drops;
     }
@@ -765,12 +774,16 @@
 
     function setSelectedTarget(target) {
       selectedTarget = target;
+      if (target) {
+        playerHP = 100; // 選擇新目標才重置玩家血量
+      }
       startBattleButton.disabled = !selectedTarget;
     }
 
     function renderMobList(dungeon) {
       if (!mobList || !mobEmpty) return;
-      const mobs = (dungeon?.monsters) || [];
+      const bossId = dungeon?.boss?.id;
+      const mobs = ((dungeon?.monsters) || []).filter((m) => !bossId || m.id !== bossId);
       if (!mobs.length) {
         mobList.innerHTML = '';
         mobEmpty.classList.remove('hidden');
@@ -802,6 +815,7 @@
       if (!droppedItems.length) return;
       droppedItems.forEach((item) => {
         const style = rarityStyles[item.rarity];
+        const qtyText = item.qty && item.qty > 1 ? `<div class="text-slate-300 text-sm">數量 x${item.qty}</div>` : '';
         const card = document.createElement('div');
         card.className = `bg-gradient-to-br ${style.bg} ${style.border} border-2 rounded-xl p-4`;
         card.innerHTML = `
@@ -810,6 +824,7 @@
             <div>
               <div class="${style.text}">${item.name}</div>
               <div class="text-slate-300 text-sm">類型：${slotLabel(item.slot_type)}</div>
+              ${qtyText}
             </div>
           </div>
           <div class="text-gray-400 text-sm space-y-1">
@@ -822,6 +837,32 @@
         `;
         dropList.appendChild(card);
       });
+    }
+
+    async function saveDropsToInventory(drops) {
+      if (!cachedUser?.discord_id) return;
+      const grantable = Array.isArray(drops)
+        ? drops.filter((d) => d?.item_template_id && (d.qty || d.qty === 0))
+        : [];
+      if (!grantable.length) return;
+      try {
+        for (const drop of grantable) {
+          const qty = Math.max(1, Number(drop.qty) || 1);
+          await fetchJSON('/api/inventory/grant', {
+            method: 'POST',
+            body: {
+              discord_id: cachedUser.discord_id,
+              item_template_id: drop.item_template_id,
+              qty,
+              note: drop.name || '地城掉落',
+            },
+          });
+        }
+        pushLog('掉落已存入背包。');
+      } catch (err) {
+        console.warn('保存掉落失敗', err);
+        pushLog('有部分掉落未能存入背包，請稍後再試。');
+      }
     }
 
     function openDungeon(dungeon) {
@@ -875,7 +916,6 @@
       selectedDungeon._battleBoss = battleBoss;
       battleResult = null;
       droppedItems = [];
-      playerHP = 100;
       monsterHP = battleBoss.hp ?? battleBoss.max_hp ?? 50;
       battleLog = [`進入 ${selectedDungeon.name}...`, `遭遇 ${battleBoss.name}！`];
       isBattling = true;
@@ -978,6 +1018,7 @@
         if (droppedItems.length) {
           dropSection.classList.remove('hidden');
           renderDrops();
+          saveDropsToInventory(droppedItems);
         } else {
           dropSection.classList.add('hidden');
         }

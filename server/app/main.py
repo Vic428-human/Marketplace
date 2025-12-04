@@ -1,14 +1,19 @@
 # app/main.py
 from contextlib import asynccontextmanager
-from decimal import Decimal
+from pathlib import Path
+from datetime import datetime, timedelta
+from decimal import Decimal, ROUND_FLOOR
 from typing import List
 import json
+import os
+import hashlib
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jose import JWTError, jwt
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
-import hashlib
 
 def api_error(code: int, message: str, status_code: int = 400):
     raise HTTPException(status_code=status_code, detail={"code": code, "message": message})
@@ -17,6 +22,7 @@ from . import models_db
 from .db import Base, engine, get_db
 from .schemas import (
     AddExpIn,
+    StatAllocateIn,
     AuthRegisterIn,
     AuthLoginIn,
     InventoryGrantIn,
@@ -31,6 +37,7 @@ from .schemas import (
     UserProfileOut,
     UserProfileUpsertIn,
     UserEquipmentUpdate,
+    TokenOut,
     WalletOut,
     WalletTopupIn,
     SkillCategoryCreate,
@@ -92,6 +99,13 @@ def serialize_dungeon(dungeon: models_db.Dungeon) -> DungeonOut:
 
 LEVEL_UP_EXP = 100
 BAG_CAPACITY = 500
+LEVEL_UP_STAT_POINTS = 1
+LEVEL_EXP_TABLE = [100, 150, 200, 300, 450]  # 可配置各等級所需經驗，超出表長則沿用最後一項
+TRADE_EXP_RATE = Decimal("0.01")  # 成交價值的 1% 轉為經驗
+JWT_SECRET = os.environ.get("JWT_SECRET", "dev-secret-change-me")
+JWT_ALG = os.environ.get("JWT_ALG", "HS256")
+JWT_EXPIRE_MINUTES = int(os.environ.get("JWT_EXPIRE_MINUTES", "43200"))
+bearer_scheme = HTTPBearer(auto_error=False)
 
 
 @asynccontextmanager
@@ -138,6 +152,7 @@ def ensure_user(
             stat_agility=0,
             stat_int=0,
             stat_luk=0,
+            stat_points=0,
         )
         db.add(user)
         db.flush()
@@ -163,17 +178,61 @@ def ensure_wallet(db: Session, discord_id: str) -> models_db.Wallet:
         .first()
     )
     if not wallet:
-        wallet = models_db.Wallet(discord_id=discord_id, balance=0, frozen_balance=0)
+        wallet = models_db.Wallet(discord_id=discord_id, balance=100, frozen_balance=0)
         db.add(wallet)
         db.flush()
     return wallet
 
 
+def create_access_token(data: dict, expires_minutes: int | None = None) -> str:
+    to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(minutes=expires_minutes or JWT_EXPIRE_MINUTES)
+    to_encode["exp"] = expire
+    return jwt.encode(to_encode, JWT_SECRET, algorithm=JWT_ALG)
+
+
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+    db: Session = Depends(get_db),
+) -> models_db.UserProfile:
+    if not credentials:
+        api_error(401, "缺少授權", status_code=401)
+    token = credentials.credentials
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG])
+        discord_id = payload.get("sub")
+    except JWTError:
+        api_error(401, "無效或過期的 token", status_code=401)
+    if not discord_id:
+        api_error(401, "無效 token", status_code=401)
+    user = db.get(models_db.UserProfile, discord_id)
+    if not user:
+        api_error(401, "帳號不存在", status_code=401)
+    return user
+
+
+def ensure_same_user(current_user: models_db.UserProfile, discord_id: str | None) -> None:
+    if discord_id and current_user.discord_id != discord_id:
+        api_error(401, "token 與帳號不符", status_code=401)
+
+
 def apply_exp(user: models_db.UserProfile, delta: int) -> None:
     user.exp += delta
-    while user.exp >= LEVEL_UP_EXP:
-        user.exp -= LEVEL_UP_EXP
+    def level_need(lv: int) -> int:
+        if LEVEL_EXP_TABLE and lv - 1 < len(LEVEL_EXP_TABLE):
+            return LEVEL_EXP_TABLE[lv - 1]
+        # 之後的等級以最後一級需求為基準，逐級乘上 1.5
+        base = LEVEL_EXP_TABLE[-1] if LEVEL_EXP_TABLE else LEVEL_UP_EXP
+        overflow = lv - len(LEVEL_EXP_TABLE)
+        return int(base * (1.5 ** overflow))
+
+    user.next_exp_needed = level_need(user.level)  # type: ignore[attr-defined]
+    while user.exp >= level_need(user.level):
+        need = level_need(user.level)
+        user.exp -= need
         user.level += 1
+        user.stat_points = (user.stat_points or 0) + LEVEL_UP_STAT_POINTS
+        user.next_exp_needed = level_need(user.level)  # type: ignore[attr-defined]
 
 
 def get_inventory_row(db: Session, discord_id: str, item_template_id: int) -> models_db.InventoryItem | None:
@@ -212,6 +271,7 @@ def match_order(db: Session, order: models_db.Order) -> None:
                 models_db.Order.item_template_id == order.item_template_id,
                 models_db.Order.side == opposite_side,
                 models_db.Order.price == order.price,  # 同價才成交
+                models_db.Order.discord_id != order.discord_id,  # 不與自己成交
             )
             .order_by(models_db.Order.created_at.asc())
         )
@@ -270,6 +330,21 @@ def match_order(db: Session, order: models_db.Order) -> None:
             taker_order_id=order.id,
         )
         db.add(trade)
+
+        # 成交經驗（買賣雙方）
+        trade_value = (trade_price * Decimal(trade_qty)).quantize(Decimal("0.01"))
+        exp_base = trade_value * TRADE_EXP_RATE
+        if exp_base > 0:
+            exp_gain = max(1, int(exp_base.to_integral_value(rounding=ROUND_FLOOR)))
+        else:
+            exp_gain = 0
+        if exp_gain > 0:
+            try:
+                apply_exp(buyer_order_user := ensure_user(db, buyer_order.discord_id, buyer_order.discord_name), exp_gain)
+                apply_exp(seller_order_user := ensure_user(db, seller_order.discord_id, seller_order.discord_name), exp_gain)
+            except Exception:
+                # 若經驗計算失敗不阻斷交易
+                pass
 
         if target.qty <= trade_qty:
             target.status = "FILLED"
@@ -339,7 +414,12 @@ def get_item_template(template_id: int, db: Session = Depends(get_db)):
 
 # 建立訂單
 @app.post("/api/orders", response_model=OrderOut, tags=["Order"])
-def create_order(payload: OrderCreate, db: Session = Depends(get_db)):
+def create_order(
+    payload: OrderCreate,
+    db: Session = Depends(get_db),
+    current_user: models_db.UserProfile = Depends(get_current_user),
+):
+    ensure_same_user(current_user, payload.discord_id)
     item = db.query(models_db.ItemTemplate).get(payload.item_template_id)
     if not item:
         raise HTTPException(status_code=404, detail="Item template not found")
@@ -524,6 +604,13 @@ def verify_password(raw: str, hashed: str | None) -> bool:
 
 
 def user_to_out(user: models_db.UserProfile) -> UserProfileOut:
+    def level_need(lv: int) -> int:
+        if LEVEL_EXP_TABLE and lv - 1 < len(LEVEL_EXP_TABLE):
+            return LEVEL_EXP_TABLE[lv - 1]
+        base = LEVEL_EXP_TABLE[-1] if LEVEL_EXP_TABLE else LEVEL_UP_EXP
+        overflow = lv - len(LEVEL_EXP_TABLE)
+        return int(base * (1.5 ** overflow))
+
     return UserProfileOut(
         discord_id=user.discord_id,
         uid=user.discord_id,
@@ -532,7 +619,9 @@ def user_to_out(user: models_db.UserProfile) -> UserProfileOut:
         email=user.email,
         level=user.level,
         exp=user.exp,
+        next_exp_needed=level_need(user.level),
         provider=user.provider,
+        stat_points=int(user.stat_points or 0),
         stat_attack=user.stat_attack,
         stat_defense=user.stat_defense,
         stat_agility=user.stat_agility,
@@ -562,7 +651,7 @@ def generate_uid(db: Session) -> str:
     return f"A{num:06d}"
 
 
-@app.post("/api/auth/register", response_model=UserProfileOut, tags=["Auth"])
+@app.post("/api/auth/register", response_model=TokenOut, tags=["Auth"])
 def register_user(payload: AuthRegisterIn, db: Session = Depends(get_db)):
     provider = (payload.provider or "platform").lower()
     if provider not in ("platform", "discord"):
@@ -632,10 +721,11 @@ def register_user(payload: AuthRegisterIn, db: Session = Depends(get_db)):
     ensure_wallet(db, user.discord_id)
     db.commit()
     db.refresh(user)
-    return user_to_out(user)
+    token = create_access_token({"sub": user.discord_id, "provider": user.provider})
+    return TokenOut(access_token=token, token_type="bearer", user=user_to_out(user))
 
 
-@app.post("/api/auth/login", response_model=UserProfileOut, tags=["Auth"])
+@app.post("/api/auth/login", response_model=TokenOut, tags=["Auth"])
 def login_user(payload: AuthLoginIn, db: Session = Depends(get_db)):
     provider = (payload.provider or "platform").lower()
     if provider not in ("platform", "discord"):
@@ -666,11 +756,17 @@ def login_user(payload: AuthLoginIn, db: Session = Depends(get_db)):
     if not verify_password(password, user.password_hash):
         api_error(2004, "帳號或密碼錯誤", status_code=401)
 
-    return user_to_out(user)
+    token = create_access_token({"sub": user.discord_id, "provider": user.provider})
+    return TokenOut(access_token=token, token_type="bearer", user=user_to_out(user))
 
 
 @app.post("/api/users/upsert", response_model=UserProfileOut, tags=["User"])
-def upsert_user(payload: UserProfileUpsertIn, db: Session = Depends(get_db)):
+def upsert_user(
+    payload: UserProfileUpsertIn,
+    db: Session = Depends(get_db),
+    current_user: models_db.UserProfile = Depends(get_current_user),
+):
+    ensure_same_user(current_user, payload.discord_id)
     user = ensure_user(db, payload.discord_id, payload.discord_name, provider="discord")
     db.commit()
     db.refresh(user)
@@ -678,7 +774,12 @@ def upsert_user(payload: UserProfileUpsertIn, db: Session = Depends(get_db)):
 
 
 @app.get("/api/users/{discord_id}", response_model=UserProfileOut, tags=["User"])
-def get_user(discord_id: str, db: Session = Depends(get_db)):
+def get_user(
+    discord_id: str,
+    db: Session = Depends(get_db),
+    current_user: models_db.UserProfile = Depends(get_current_user),
+):
+    ensure_same_user(current_user, discord_id)
     user = db.get(models_db.UserProfile, discord_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -686,12 +787,59 @@ def get_user(discord_id: str, db: Session = Depends(get_db)):
 
 
 @app.post("/api/users/add-exp", response_model=UserProfileOut, tags=["User"])
-def add_exp(payload: AddExpIn, db: Session = Depends(get_db)):
+def add_exp(
+    payload: AddExpIn,
+    db: Session = Depends(get_db),
+    current_user: models_db.UserProfile = Depends(get_current_user),
+):
+    ensure_same_user(current_user, payload.discord_id)
     user = ensure_user(db, payload.discord_id)
     apply_exp(user, payload.delta)
     db.commit()
     db.refresh(user)
     return user
+
+
+@app.post("/api/users/{discord_id}/allocate-points", response_model=UserProfileOut, tags=["User"])
+def allocate_points(
+    discord_id: str,
+    payload: StatAllocateIn,
+    db: Session = Depends(get_db),
+    current_user: models_db.UserProfile = Depends(get_current_user),
+):
+    ensure_same_user(current_user, discord_id)
+    user = ensure_user(db, discord_id)
+    spend = (
+        int(payload.attack or 0)
+        + int(payload.defense or 0)
+        + int(payload.agility or 0)
+        + int(payload.intelligence or 0)
+        + int(payload.luck or 0)
+    )
+    if spend <= 0:
+        api_error(3001, "請至少分配 1 點", status_code=400)
+    if (user.stat_points or 0) < spend:
+        api_error(3002, "能力點不足", status_code=400)
+
+    user.stat_points = int(user.stat_points or 0) - spend
+    user.stat_attack += int(payload.attack or 0)
+    user.stat_defense += int(payload.defense or 0)
+    user.stat_agility += int(payload.agility or 0)
+    user.stat_int += int(payload.intelligence or 0)
+    user.stat_luk += int(payload.luck or 0)
+
+    db.commit()
+    db.refresh(user)
+    return user_to_out(user)
+
+
+@app.get("/readme.txt")
+def get_readme_txt():
+    readme_path = Path(__file__).resolve().parent / "readme.txt"
+    if not readme_path.exists():
+        raise HTTPException(status_code=404, detail="readme.txt not found")
+    content = readme_path.read_text(encoding="utf-8", errors="ignore")
+    return Response(content, media_type="text/plain; charset=utf-8")
 
 
 def validate_ownership(db: Session, discord_id: str, item_id: int | None) -> int | None:
@@ -708,7 +856,13 @@ def validate_ownership(db: Session, discord_id: str, item_id: int | None) -> int
 
 
 @app.post("/api/users/{discord_id}/equipment", response_model=UserProfileOut, tags=["User"])
-def update_equipment(discord_id: str, payload: UserEquipmentUpdate, db: Session = Depends(get_db)):
+def update_equipment(
+    discord_id: str,
+    payload: UserEquipmentUpdate,
+    db: Session = Depends(get_db),
+    current_user: models_db.UserProfile = Depends(get_current_user),
+):
+    ensure_same_user(current_user, discord_id)
     user = ensure_user(db, discord_id)
     def resolve_template(template_id: int | None):
         """Equip directly by item_template_id (UserProfile now stores模板ID)."""
@@ -762,7 +916,12 @@ def update_equipment(discord_id: str, payload: UserEquipmentUpdate, db: Session 
 
 
 @app.post("/api/wallet/topup", response_model=WalletOut, tags=["Wallet"])
-def wallet_topup(payload: WalletTopupIn, db: Session = Depends(get_db)):
+def wallet_topup(
+    payload: WalletTopupIn,
+    db: Session = Depends(get_db),
+    current_user: models_db.UserProfile = Depends(get_current_user),
+):
+    ensure_same_user(current_user, payload.discord_id)
     if payload.amount <= 0:
         raise HTTPException(status_code=400, detail="儲值金額需要 > 0")
 
@@ -776,7 +935,12 @@ def wallet_topup(payload: WalletTopupIn, db: Session = Depends(get_db)):
 
 
 @app.get("/api/wallet/{discord_id}", response_model=WalletOut, tags=["Wallet"])
-def get_wallet(discord_id: str, db: Session = Depends(get_db)):
+def get_wallet(
+    discord_id: str,
+    db: Session = Depends(get_db),
+    current_user: models_db.UserProfile = Depends(get_current_user),
+):
+    ensure_same_user(current_user, discord_id)
     wallet = (
         db.query(models_db.Wallet)
         .filter(models_db.Wallet.discord_id == discord_id)
@@ -788,7 +952,12 @@ def get_wallet(discord_id: str, db: Session = Depends(get_db)):
 
 
 @app.post("/api/inventory/grant", response_model=InventoryItemOut, tags=["Inventory"])
-def grant_item(payload: InventoryGrantIn, db: Session = Depends(get_db)):
+def grant_item(
+    payload: InventoryGrantIn,
+    db: Session = Depends(get_db),
+    current_user: models_db.UserProfile = Depends(get_current_user),
+):
+    ensure_same_user(current_user, payload.discord_id)
     if payload.qty <= 0:
         raise HTTPException(status_code=400, detail="qty 必須大於 0")
 
@@ -830,7 +999,12 @@ def grant_item(payload: InventoryGrantIn, db: Session = Depends(get_db)):
 
 
 @app.get("/api/inventory/{discord_id}", response_model=List[InventoryItemOut], tags=["Inventory"])
-def list_inventory(discord_id: str, db: Session = Depends(get_db)):
+def list_inventory(
+    discord_id: str,
+    db: Session = Depends(get_db),
+    current_user: models_db.UserProfile = Depends(get_current_user),
+):
+    ensure_same_user(current_user, discord_id)
     user = db.get(models_db.UserProfile, discord_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -845,7 +1019,12 @@ def list_inventory(discord_id: str, db: Session = Depends(get_db)):
 
 
 @app.get("/api/inventory/{discord_id}/summary", response_model=InventorySummaryOut, tags=["Inventory"])
-def get_inventory_summary(discord_id: str, db: Session = Depends(get_db)):
+def get_inventory_summary(
+    discord_id: str,
+    db: Session = Depends(get_db),
+    current_user: models_db.UserProfile = Depends(get_current_user),
+):
+    ensure_same_user(current_user, discord_id)
     user = db.get(models_db.UserProfile, discord_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -907,6 +1086,7 @@ def create_monster(payload: MonsterCreate, db: Session = Depends(get_db)):
         attack=payload.attack,
         hp=payload.hp,
         defense=payload.defense,
+        icon=payload.icon,
     )
     monster.skill_categories = categories
     db.add(monster)

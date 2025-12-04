@@ -213,6 +213,8 @@
       async function fetchJSON(path, options = {}) {
         const url = `${API_BASE || ''}${path}`;
         const headers = { ...(options.headers || {}), ...NGROK_BYPASS_HEADER };
+        const token = localStorage.getItem('ve_token');
+        if (token) headers['Authorization'] = `Bearer ${token}`;
         if (options.body && !(options.body instanceof FormData)) {
           headers['Content-Type'] = 'application/json';
         }
@@ -221,6 +223,10 @@
           headers,
           body: options.body && !(options.body instanceof FormData) ? JSON.stringify(options.body) : options.body,
         });
+        if (res.status === 401) {
+          localStorage.removeItem('ve_token');
+          throw new Error('請先登入');
+        }
         const text = await res.text();
         let data = null;
         try {
@@ -249,8 +255,10 @@
             method: 'POST',
             body: payload,
           });
-          const uid = data?.uid || data?.discord_id || '';
-          saveSession(data);
+          const user = data?.user || data;
+          const token = data?.access_token || null;
+          const uid = user?.uid || user?.discord_id || '';
+          saveSession(user, token);
           showToast(uid ? `註冊成功，UID：${uid}` : '註冊成功', 'success');
           setTimeout(() => {
             window.location.href = 'index.html';
@@ -275,8 +283,10 @@
             method: 'POST',
             body: payload,
           });
-          const uid = data?.uid || data?.discord_id || '';
-          saveSession(data);
+          const user = data?.user || data;
+          const token = data?.access_token || null;
+          const uid = user?.uid || user?.discord_id || '';
+          saveSession(user, token);
           showToast(uid ? `登入成功，UID：${uid}` : '登入成功', 'success');
           setTimeout(() => {
             window.location.href = 'index.html';
@@ -292,7 +302,7 @@
         }
       }
 
-      function saveSession(user) {
+      function saveSession(user, token) {
         if (!user) return;
         const mapped = {
           discord_id: user.uid || user.discord_id,
@@ -301,6 +311,9 @@
           provider: user.provider || 'platform',
         };
         localStorage.setItem('virtual_exchange_user', JSON.stringify(mapped));
+        if (token) {
+          localStorage.setItem('ve_token', token);
+        }
       }
 
       if (discordLoginBtn) {
@@ -339,10 +352,15 @@
               }
             }
             if (data) {
-              data.provider = 'discord';
-              data.discord_name = username;
-              data.discord_id = id.trim();
-              saveSession(data);
+              const user = data.user || data;
+              const token = data.access_token || null;
+              const mappedUser = {
+                ...user,
+                provider: 'discord',
+                discord_name: username,
+                discord_id: id.trim(),
+              };
+              saveSession(mappedUser, token);
               showToast(`已以 Discord 模擬登入：${username}`, 'success');
               setTimeout(() => {
                 window.location.href = 'index.html';

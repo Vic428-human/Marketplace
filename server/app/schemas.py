@@ -108,7 +108,9 @@ class UserProfileOut(BaseModel):
     email: Optional[EmailStr] = None
     level: int
     exp: int
+    next_exp_needed: int | None = None
     provider: Optional[str] = None
+    stat_points: int = 0
     stat_attack: int =0
     stat_defense: int = 0
     stat_agility: int = 0
@@ -131,6 +133,13 @@ class AddExpIn(BaseModel):
     discord_id: str
     delta: int = Field(..., ge=1, example=50)
 
+
+class StatAllocateIn(BaseModel):
+    attack: int = Field(0, ge=0)
+    defense: int = Field(0, ge=0)
+    agility: int = Field(0, ge=0)
+    intelligence: int = Field(0, ge=0)
+    luck: int = Field(0, ge=0)
 
 class InventoryGrantIn(BaseModel):
     discord_id: str
@@ -205,6 +214,12 @@ class SkillCategoryOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class TokenOut(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserProfileOut
 
 
 class MonsterCreate(BaseModel):

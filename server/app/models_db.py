@@ -19,6 +19,7 @@ class UserProfile(Base):
     provider: Mapped[str] = mapped_column(String(20), default="platform")
     level: Mapped[int] = mapped_column(Integer, default=1)
     exp: Mapped[int] = mapped_column(Integer, default=0)
+    stat_points: Mapped[int] = mapped_column(Integer, default=0)
     stat_attack: Mapped[int] = mapped_column(Integer, default=0)
     stat_defense: Mapped[int] = mapped_column(Integer, default=0)
     stat_agility: Mapped[int] = mapped_column(Integer, default=0)

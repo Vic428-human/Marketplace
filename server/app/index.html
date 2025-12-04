@@ -133,7 +133,7 @@
       <!-- Hero 區 -->
       <section class="glass rounded-3xl p-8 relative overflow-hidden">
         <div class="absolute inset-0 bg-gradient-to-br from-fuchsia-500/10 via-cyan-400/10 to-amber-300/10 blur-3xl"></div>
-        <div class="relative z-10 grid lg:grid-cols-2 gap-8 items-center">
+        <div class="relative z-10 grid lg:grid-cols-2 gap-8 items-start">
           <div class="space-y-4">
             <p class="text-sm text-cyan-200">冒險者交易大廳</p>
             <h1 class="text-3xl md:text-4xl font-bold leading-tight text-white">
@@ -144,7 +144,19 @@
             </p>
             <div class="flex flex-wrap gap-3 pt-2">
               <button id="startAdventure" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-fuchsia-400 to-cyan-300 text-slate-900 font-semibold shadow-lg shadow-fuchsia-500/30 hover:scale-[1.02] transition">開始冒險</button>
-              <a href="#about" class="px-4 py-2.5 rounded-xl border border-slate-700 text-slate-100 hover:border-cyan-300/60">了解玩法</a>
+              <a href="AboutPage.html" class="px-4 py-2.5 rounded-xl border border-slate-700 text-slate-100 hover:border-cyan-300/60">了解玩法</a>
+            </div>
+          </div>
+          <div class="rounded-2xl border border-cyan-500/30 bg-slate-900/50 backdrop-blur-lg shadow-[0_0_30px_rgba(56,189,248,0.15)] p-4 space-y-3">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="text-xs uppercase tracking-[0.12em] text-cyan-200">更新公告</div>
+                <div id="announcementTitle" class="text-sm text-slate-300">最新版本資訊</div>
+              </div>
+              <span class="text-[11px] px-2 py-1 rounded-full bg-cyan-500/15 border border-cyan-400/40 text-cyan-100">Readme</span>
+            </div>
+            <div class="rounded-xl border border-slate-800 bg-slate-900/70 p-3 max-h-56 overflow-y-auto text-sm text-slate-200 leading-relaxed space-y-1">
+              <pre id="announcementContent" class="whitespace-pre-wrap font-mono text-[13px] text-slate-200">載入中...</pre>
             </div>
           </div>
         </div>
@@ -225,6 +237,8 @@
       async function fetchJSON(path, options = {}) {
         const url = `${API_BASE || ''}${path}`;
         const headers = { ...(options.headers || {}), ...NGROK_BYPASS_HEADER };
+        const token = localStorage.getItem('ve_token');
+        if (token) headers['Authorization'] = `Bearer ${token}`;
         if (options.body && !(options.body instanceof FormData)) {
           headers['Content-Type'] = 'application/json';
         }
@@ -233,6 +247,10 @@
           headers,
           body: options.body && !(options.body instanceof FormData) ? JSON.stringify(options.body) : options.body,
         });
+        if (res.status === 401) {
+          localStorage.removeItem('ve_token');
+          throw new Error('請先登入');
+        }
         const text = await res.text();
         let data = null;
         try { data = text ? JSON.parse(text) : null; } catch { /* ignore */ }
@@ -254,6 +272,8 @@
       const mobileUserCard = document.getElementById('mobileUserCard');
       const mobileUserName = document.getElementById('mobileUserName');
       const mobileUserId = document.getElementById('mobileUserId');
+      const announcementContent = document.getElementById('announcementContent');
+      const announcementTitle = document.getElementById('announcementTitle');
 
       let cachedUser = null;
       let dropdownTimer = null;
@@ -262,6 +282,24 @@
         "flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-fuchsia-400 to-cyan-300 text-slate-900 font-semibold shadow-lg shadow-fuchsia-500/30 hover:scale-[1.02] transition";
       const userButtonClass =
         "flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900/70 border border-slate-700 text-slate-100 font-semibold shadow-lg hover:border-cyan-300/60 transition";
+
+      async function loadAnnouncement() {
+        if (!announcementContent) return;
+        const path = `${API_BASE || ''}/readme.txt`;
+        try {
+          const res = await fetch(path, { headers: NGROK_BYPASS_HEADER });
+          if (!res.ok) throw new Error(res.statusText || '讀取失敗');
+          const text = await res.text();
+          const clean = text?.trim() || '目前沒有公告內容。';
+          announcementContent.textContent = clean;
+          if (announcementTitle) {
+            const firstLine = clean.split('\n').find((l) => l.trim());
+            announcementTitle.textContent = firstLine ? firstLine.slice(0, 64) : '最新版本資訊';
+          }
+        } catch (err) {
+          announcementContent.textContent = '公告讀取失敗，請稍後再試。';
+        }
+      }
 
       async function loadTicker() {
         if (tickerLoaded) return;
@@ -369,6 +407,7 @@
 
       function logoutUser() {
         localStorage.removeItem('virtual_exchange_user');
+        localStorage.removeItem('ve_token');
         clearUserState();
         window.location.href = 'index.html';
       }
@@ -387,6 +426,7 @@
 
       clearUserState();
       applyUserState();
+      loadAnnouncement();
       loadTicker();
 
       const mobileBtn = document.getElementById('mobileMenuBtn');

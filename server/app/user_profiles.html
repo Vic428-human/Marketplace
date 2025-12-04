@@ -203,6 +203,79 @@
       .btn-equip:active {
         transform: translateY(1px);
       }
+      /* 美化數字輸入：移除原生箭頭並統一外觀 */
+      input.stat-input {
+        -moz-appearance: textfield;
+        appearance: textfield;
+        background: #0b1324;
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        color: #e2e8f0;
+        border-radius: 10px;
+        padding: 6px 8px;
+        font-weight: 600;
+        text-align: right;
+        outline: none;
+        transition: border-color 0.12s ease, box-shadow 0.12s ease;
+      }
+      input.stat-input:focus {
+        border-color: #38bdf8;
+        box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+      }
+      input.stat-input::-webkit-outer-spin-button,
+      input.stat-input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+      /* EXP 提示泡泡 */
+      .tooltip {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 20px;
+        height: 20px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        color: #cbd5f5;
+        font-size: 12px;
+        cursor: default;
+      }
+      .tooltip:hover .tooltip-content {
+        opacity: 1;
+        pointer-events: auto;
+        transform: translate(-50%, -6px);
+      }
+      .tooltip-content {
+        position: absolute;
+        bottom: 130%;
+        left: 50%;
+        transform: translate(-50%, 0);
+        min-width: 220px;
+        max-width: 260px;
+        padding: 10px 12px;
+        background: #0b1324;
+        border: 1px solid rgba(56, 189, 248, 0.4);
+        border-radius: 10px;
+        color: #e2e8f0;
+        font-size: 12px;
+        line-height: 1.45;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.15s ease, transform 0.15s ease;
+        z-index: 30;
+      }
+      .tooltip-content::after {
+        content: "";
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        border-width: 6px;
+        border-style: solid;
+        border-color: rgba(56, 189, 248, 0.4) transparent transparent transparent;
+      }
     </style>
   </head>
   <body class="pb-10">
@@ -218,7 +291,7 @@
         <nav class="hidden md:flex items-center gap-6 text-sm text-slate-200">
           <a class="hover:text-white" href="index.html">首頁</a>
           <a class="hover:text-white" href="Dungeon.html">地城</a>
-          <a class="text-cyan-200 font-semibold" href="market.html">裝備市場</a>
+          <a class="hover:text-white" href="market.html">裝備市場</a>
           <a class="hover:text-white" href="AboutPage.html">世界觀與玩法</a>
         </nav>
         <div class="flex items-center gap-3">
@@ -330,12 +403,25 @@
             </div>
             <div class="w-full space-y-2">
               <div class="flex items-center justify-between text-xs text-slate-300">
-                <span>EXP</span>
+                <div class="flex items-center gap-2">
+                  <span>EXP</span>
+                  <div class="tooltip">
+                    ?
+                    <div class="tooltip-content">
+                      取得方式：<br>
+                      • 交易成交：<br>
+                      (價格 × 數量) × 1%，至少 1 點。<br>
+                    </div>
+                  </div>
+                </div>
                 <span id="expLabel" class="text-slate-200">--</span>
               </div>
               <div class="h-2.5 rounded-full bg-slate-800/80 overflow-hidden border border-slate-700/70">
                 <div id="expBar" class="h-full bg-gradient-to-r from-cyan-400 via-blue-400 to-amber-300" style="width:0%"></div>
               </div>
+            </div>
+            <div class="w-full flex items-center justify-center text-xs text-amber-200 bg-amber-500/10 border border-amber-300/30 rounded-lg px-3 py-1">
+              未分配點數：<span id="statPoints" class="ml-1 font-semibold">0</span>
             </div>
             <div class="stat-grid w-full text-center pt-2">
               <div class="stat-box">
@@ -359,6 +445,9 @@
                 <div id="statLuk" class="text-xl font-semibold text-pink-200">-</div>
               </div>
             </div>
+            <button id="openStatModal" class="w-full mt-2 py-2.5 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-900 font-semibold shadow-lg shadow-emerald-500/30 hover:scale-[1.01] transition text-sm">
+              分配能力點
+            </button>
           </div>
 
           <div class="rounded-2xl bg-slate-900/50 border border-slate-800 p-4 space-y-4">
@@ -408,9 +497,54 @@
       </div>
     </div>
 
+    <!-- Stat allocate modal -->
+    <div id="statModal" class="modal-overlay">
+      <div class="modal-card relative">
+        <div class="flex justify-end">
+          <button id="statModalClose" class="modal-close">✕</button>
+        </div>
+        <div class="modal-avatar">📈</div>
+        <div class="text-center space-y-1">
+          <div class="text-lg font-semibold text-white">分配能力點</div>
+          <div class="text-sm text-slate-300">請選擇要強化的屬性</div>
+        </div>
+        <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
+          <label class="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-slate-900/60 border border-slate-800">
+            <span>攻擊</span>
+            <input id="allocAtk" type="number" min="0" value="0" class="w-16 stat-input" />
+          </label>
+          <label class="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-slate-900/60 border border-slate-800">
+            <span>防禦</span>
+            <input id="allocDef" type="number" min="0" value="0" class="w-16 stat-input" />
+          </label>
+          <label class="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-slate-900/60 border border-slate-800">
+            <span>敏捷</span>
+            <input id="allocAgi" type="number" min="0" value="0" class="w-16 stat-input" />
+          </label>
+          <label class="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-slate-900/60 border border-slate-800">
+            <span>智力</span>
+            <input id="allocInt" type="number" min="0" value="0" class="w-16 stat-input" />
+          </label>
+          <label class="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-slate-900/60 border border-slate-800 col-span-2">
+            <span>幸運</span>
+            <input id="allocLuk" type="number" min="0" value="0" class="w-16 stat-input" />
+          </label>
+        </div>
+        <div class="mt-4 flex gap-3">
+          <button id="statModalSubmit" class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-900 font-semibold shadow-lg shadow-emerald-500/30 hover:scale-[1.01] transition">
+            確認分配
+          </button>
+          <button id="statModalCancel" class="flex-1 py-2.5 rounded-xl border border-slate-700 text-slate-100 hover:border-cyan-300/60 transition">
+            取消
+          </button>
+        </div>
+      </div>
+    </div>
+
     <script>
       const API_BASE = "https://built-spelling-conduct-providence.trycloudflare.com";
       const NGROK_BYPASS_HEADER = { "ngrok-skip-browser-warning": "true" };
+      // 由後端回傳 next_exp_needed，這裡僅作 fallback
       const LEVEL_UP_EXP = 100;
 
       const logoutBtnDesktop = document.getElementById("logoutBtnDesktop");
@@ -433,6 +567,7 @@
       const walletFrozen = document.getElementById("walletFrozen");
       const expLabel = document.getElementById("expLabel");
       const expBar = document.getElementById("expBar");
+      const statPoints = document.getElementById("statPoints");
       const statAtk = document.getElementById("statAtk");
       const statDef = document.getElementById("statDef");
       const statAgi = document.getElementById("statAgi");
@@ -453,6 +588,16 @@
       const equipModalStats = document.getElementById("equipModalStats");
       const equipModalAction = document.getElementById("equipModalAction");
       const equipModalAvatar = document.querySelector("#equipModal .modal-avatar");
+      const openStatModal = document.getElementById("openStatModal");
+      const statModal = document.getElementById("statModal");
+      const statModalClose = document.getElementById("statModalClose");
+      const statModalCancel = document.getElementById("statModalCancel");
+      const statModalSubmit = document.getElementById("statModalSubmit");
+      const allocAtk = document.getElementById("allocAtk");
+      const allocDef = document.getElementById("allocDef");
+      const allocAgi = document.getElementById("allocAgi");
+      const allocInt = document.getElementById("allocInt");
+      const allocLuk = document.getElementById("allocLuk");
 
       let currentUser = null;
       let profile = null;
@@ -477,6 +622,8 @@
       async function fetchJSON(path, options = {}) {
         const url = `${API_BASE || ""}${path}`;
         const headers = { ...(options.headers || {}), ...NGROK_BYPASS_HEADER };
+        const token = localStorage.getItem("ve_token");
+        if (token) headers["Authorization"] = `Bearer ${token}`;
         if (options.body && !(options.body instanceof FormData)) {
           headers["Content-Type"] = "application/json";
         }
@@ -485,6 +632,11 @@
           headers,
           body: options.body && !(options.body instanceof FormData) ? JSON.stringify(options.body) : options.body,
         });
+        if (res.status === 401) {
+          localStorage.removeItem("ve_token");
+          window.location.href = "login.html";
+          throw new Error("請先登入");
+        }
         const text = await res.text();
         let data = null;
         try {
@@ -640,6 +792,10 @@
       function closeEquipModal() {
         if (equipModal) equipModal.classList.remove("active");
       }
+      function closeStatModal() {
+        if (statModal) statModal.classList.remove("active");
+        [allocAtk, allocDef, allocAgi, allocInt, allocLuk].forEach((el) => el && (el.value = 0));
+      }
 
       function equipItem(item) {
         const idx = EQUIP_SLOTS.findIndex(
@@ -671,13 +827,15 @@
         playerLevel.textContent = profile.level ?? "-";
         heroLevel.textContent = `Lv.${profile.level ?? "-"}`;
         const exp = Number(profile.exp || 0);
-        const pct = Math.min(100, (exp / LEVEL_UP_EXP) * 100);
-        expLabel.textContent = `${exp} / ${LEVEL_UP_EXP}`;
+        const need = Number(profile.next_exp_needed || LEVEL_UP_EXP);
+        const pct = Math.min(100, need > 0 ? (exp / need) * 100 : 0);
+        expLabel.textContent = `${exp} / ${need}`;
         expBar.style.width = `${pct}%`;
         const tradePct = Math.min(100, pct);
         progressPct.textContent = `${tradePct.toFixed(0)}%`;
         progressBar.style.width = `${tradePct}%`;
         tradeTitle.textContent = tradePct >= 66 ? "專業交易者" : tradePct >= 33 ? "中級交易者" : "新手交易者";
+        if (statPoints) statPoints.textContent = profile.stat_points ?? 0;
         statAtk.textContent = profile.stat_attack ?? 0;
         statDef.textContent = profile.stat_defense ?? 0;
         statAgi.textContent = profile.stat_agility ?? 0;
@@ -836,6 +994,7 @@
 
       function logout() {
         localStorage.removeItem("virtual_exchange_user");
+        localStorage.removeItem("ve_token");
         window.location.href = "index.html";
       }
 
@@ -860,6 +1019,37 @@
           profile = updated;
         } catch (err) {
           // 若失敗，暫不阻斷前端行為
+        }
+      }
+
+      async function submitStatPoints() {
+        if (!profile || !currentUser) return;
+        const payload = {
+          attack: Number(allocAtk?.value || 0),
+          defense: Number(allocDef?.value || 0),
+          agility: Number(allocAgi?.value || 0),
+          intelligence: Number(allocInt?.value || 0),
+          luck: Number(allocLuk?.value || 0),
+        };
+        const spend = Object.values(payload).reduce((s, v) => s + (Number(v) || 0), 0);
+        if (!spend || spend <= 0) {
+          alert("請至少分配 1 點");
+          return;
+        }
+        if ((profile.stat_points || 0) < spend) {
+          alert("能力點不足");
+          return;
+        }
+        try {
+          const updated = await fetchJSON(`/api/users/${encodeURIComponent(currentUser.discord_id)}/allocate-points`, {
+            method: "POST",
+            body: payload,
+          });
+          profile = updated;
+          renderProfileUI();
+          closeStatModal();
+        } catch (err) {
+          alert(err.message || "分配失敗");
         }
       }
 
@@ -896,6 +1086,23 @@
             closeEquipModal();
           });
         }
+        if (openStatModal && statModal) {
+          openStatModal.addEventListener("click", () => {
+            if (!profile || (profile.stat_points || 0) <= 0) {
+              alert("沒有可分配的能力點");
+              return;
+            }
+            statModal.classList.add("active");
+          });
+        }
+        if (statModalClose) statModalClose.addEventListener("click", closeStatModal);
+        if (statModalCancel) statModalCancel.addEventListener("click", closeStatModal);
+        if (statModal) {
+          statModal.addEventListener("click", (e) => {
+            if (e.target === statModal) closeStatModal();
+          });
+        }
+        if (statModalSubmit) statModalSubmit.addEventListener("click", submitStatPoints);
       }
 
       init();

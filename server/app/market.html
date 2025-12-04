@@ -220,7 +220,7 @@
             </div>
             <div class="space-y-2 text-sm">
               <label class="block text-slate-300 text-xs">價格 (Zeny)</label>
-              <input id="price" type="number" min="0" step="1" class="w-full rounded-lg bg-slate-900/70 border border-slate-700 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-cyan-300/70" />
+              <input id="price" type="number" min="0" step="0.0001" class="w-full rounded-lg bg-slate-900/70 border border-slate-700 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-cyan-300/70" />
               <label class="block text-slate-300 text-xs">數量</label>
               <input id="qty" type="number" min="1" step="1" value="1" class="w-full rounded-lg bg-slate-900/70 border border-slate-700 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-cyan-300/70" />
               <div class="flex items-center justify-between text-xs bg-slate-800/60 rounded-lg px-3 py-2">
@@ -253,12 +253,13 @@
                 <div class="w全 h-2.5 rounded-full bg-slate-800 overflow-hidden">
                   <div id="expBar" class="h-full bg-gradient-to-r from-cyan-400 to-amber-300" style="width: 0%"></div>
                 </div>
-                <div class="text-[11px] text-slate-400 mt-1">EXP <span id="expLabel"></span> / 100</div>
+                <div class="text-[11px] text-slate-400 mt-1">EXP <span id="expLabel"></span></div>
               </div>
               <div class="border border-slate-800 rounded-lg p-2 bg-slate-900/60">
                 <div class="flex justify-between text-[11px] text-slate-400 mb-1">
                   <span>錢包</span>
-                  <button id="topupButton" class="px-2 py-0.5 rounded-full bg-cyan-500/80 text-slate-900 text-[11px] font-semibold hover:bg-cyan-400">儲值</button>
+          <!-- 儲值暫時隱藏 -->
+          <!-- <button id="topupButton" class="px-2 py-0.5 rounded-full bg-cyan-500/80 text-slate-900 text-[11px] font-semibold hover:bg-cyan-400">儲值</button> -->
                 </div>
                 <div class="flex justify-between text-xs"><span class="text-slate-400">可用</span><span id="walletAvailable" class="font-semibold text-emerald-300">0</span></div>
                 <div class="flex justify-between text-xs"><span class="text-slate-400">凍結</span><span id="walletFrozen" class="font-semibold text-amber-300">0</span></div>
@@ -412,6 +413,7 @@
         currentUser = null;
         profile = null;
         localStorage.removeItem("virtual_exchange_user");
+        localStorage.removeItem("ve_token");
         renderAuthUI();
         inventoryList.innerHTML = '<p class="text-slate-500">登入後可查看倉庫</p>';
         myOrdersDiv.innerHTML = "";
@@ -476,8 +478,10 @@
         const label = profile.discord_name || profile.discord_id;
         accountUserLabel.textContent = label;
         levelLabel.textContent = `Lv.${profile.level}`;
-        expLabel.textContent = profile.exp;
-        const pct = Math.min(100, (profile.exp / LEVEL_UP_EXP) * 100);
+        const exp = Number(profile.exp || 0);
+        const need = Number(profile.next_exp_needed || LEVEL_UP_EXP);
+        expLabel.textContent = `${exp} / ${need}`;
+        const pct = Math.min(100, need > 0 ? (exp / need) * 100 : 0);
         expBar.style.width = `${pct}%`;
       }
 
@@ -622,29 +626,31 @@
       buyButton.addEventListener("click", () => submitOrder("BUY"));
       sellButton.addEventListener("click", () => submitOrder("SELL"));
 
-      topupButton.addEventListener("click", async () => {
-        if (!currentUser) {
-          showMessage("已登出");
-          return;
-        }
-        const input = window.prompt("儲值金額（Zeny）", "1000");
-        if (!input) return;
-        const amount = Number(input);
-        if (isNaN(amount) || amount <= 0) {
-          showMessage("已登出");
-          return;
-        }
-        try {
-          await fetchJSON("/api/wallet/topup", {
-            method: "POST",
-            body: { discord_id: currentUser.discord_id, amount },
-          });
-          showMessage("已登出");
-          await loadWallet();
-        } catch (err) {
-          showMessage(err.message, "error");
-        }
-      });
+      if (topupButton) {
+        topupButton.addEventListener("click", async () => {
+          if (!currentUser) {
+            showMessage("請先登入");
+            return;
+          }
+          const input = window.prompt("儲值金額（Zeny）", "1000");
+          if (!input) return;
+          const amount = Number(input);
+          if (isNaN(amount) || amount <= 0) {
+            showMessage("金額需大於 0");
+            return;
+          }
+          try {
+            await fetchJSON("/api/wallet/topup", {
+              method: "POST",
+              body: { discord_id: currentUser.discord_id, amount },
+            });
+            showMessage("儲值成功");
+            await loadWallet();
+          } catch (err) {
+            showMessage(err.message, "error");
+          }
+        });
+      }
 
       async function upsertUser(discord_id, discord_name) {
         return fetchJSON("/api/users/upsert", {
@@ -997,12 +1003,13 @@
       }
 
       function setReferencePrice(value) {
-        selectedItemPrice.textContent = `${Number(value).toLocaleString(undefined, {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 2,
+        const num = Number(value);
+        selectedItemPrice.textContent = `${num.toLocaleString(undefined, {
+          minimumFractionDigits: 4,
+          maximumFractionDigits: 4,
         })} Z`;
         if (!priceLockedByUser) {
-          priceInput.value = Number(value).toFixed(0);
+          priceInput.value = num.toFixed(4);
           updateTotal();
         }
       }
@@ -1244,6 +1251,8 @@
       async function fetchJSON(path, options = {}) {
         const url = `${API_BASE || ""}${path}`;
         const headers = { ...(options.headers || {}), ...NGROK_BYPASS_HEADER };
+        const token = localStorage.getItem("ve_token");
+        if (token) headers["Authorization"] = `Bearer ${token}`;
         if (options.body && !(options.body instanceof FormData)) {
           headers["Content-Type"] = "application/json";
         }
@@ -1252,6 +1261,10 @@
           headers,
           body: options.body && !(options.body instanceof FormData) ? JSON.stringify(options.body) : options.body,
         });
+        if (res.status === 401) {
+          localStorage.removeItem("ve_token");
+          throw new Error("請先登入");
+        }
         const text = await res.text();
         let data;
         try {
