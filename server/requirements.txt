@@ -1,4 +1,6 @@
 fastapi
 uvicorn
-firebase-admin
 pydantic
+sqlalchemy
+requests
+opencc-python-reimplemented

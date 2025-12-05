@@ -4,10 +4,11 @@ from pathlib import Path
 from datetime import datetime, timedelta
 from decimal import Decimal, ROUND_FLOOR
 from typing import List
+from collections import Counter
 import json
 import os
 import hashlib
-
+from collections import Counter
 from fastapi import Depends, FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -19,6 +20,7 @@ def api_error(code: int, message: str, status_code: int = 400):
     raise HTTPException(status_code=status_code, detail={"code": code, "message": message})
 
 from . import models_db
+from . import synthesis
 from .db import Base, engine, get_db
 from .schemas import (
     AddExpIn,
@@ -33,6 +35,7 @@ from .schemas import (
     OrderCreate,
     OrderOut,
     OrderBookEntry,
+    SynthesisCreate,
     TradeOut,
     UserProfileOut,
     UserProfileUpsertIn,
@@ -118,9 +121,9 @@ app = FastAPI(title="Virtual Item Exchange", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 一律放行，含 file:// (null origin)
+    allow_origins=["*"],
     allow_origin_regex=".*",
-    allow_credentials=False,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
     max_age=86400,
@@ -582,6 +585,7 @@ def cancel_order(order_id: int, discord_id: str, db: Session = Depends(get_db)):
         wallet.frozen_balance = wallet.frozen_balance - Decimal(order.locked_amount or 0)
         if wallet.frozen_balance < 0:
             wallet.frozen_balance = 0
+
     else:
         wallet.frozen_balance = wallet.frozen_balance - Decimal(order.locked_amount or 0)
         if wallet.frozen_balance < 0:
@@ -1003,7 +1007,100 @@ def update_equipment(
     return user_to_out(user)
 
 
+@app.post("/api/synthesis", response_model=ItemTemplateOut, tags=["Synthesis"])
+async def api_synthesize_item(
+    payload: SynthesisCreate,
+    db: Session = Depends(get_db),
+    current_user: models_db.UserProfile = Depends(get_current_user),
+):
+    """
+    Synthesizes a new item from a list of inventory items using AI.
+    """
+    ensure_same_user(current_user, payload.discord_id)
 
+    if len(payload.inventory_item_ids) < 2:
+        api_error(400, "Synthesis requires at least two items.", status_code=400)
+
+
+
+# ... (inside api_synthesize_item)
+    try:
+        # Create a counter of how many of each inventory item ID to consume
+        item_counts = Counter(payload.inventory_item_ids)
+
+        # Fetch the unique inventory items
+        inventory_items_to_consume = db.query(models_db.InventoryItem).options(joinedload(models_db.InventoryItem.item_template)).filter(
+            models_db.InventoryItem.id.in_(item_counts.keys()),
+            models_db.InventoryItem.discord_id == current_user.discord_id
+        ).all()
+
+        # Check if we found all the requested unique items
+        if len(inventory_items_to_consume) != len(item_counts):
+            api_error(404, "One or more items not found in your inventory.", status_code=404)
+
+        item_templates_to_synthesize = []
+        total_consumed = sum(item_counts.values())
+
+        # Before consuming, check if the bag will be full
+        current_total_qty = get_inventory_total_qty(db, current_user.discord_id)
+        if (current_total_qty - total_consumed + 1) > BAG_CAPACITY:
+            api_error(400, "Bag will be full after synthesis. Please make space first.", status_code=400)
+
+        # Loop through the fetched items and consume the correct quantity
+        for inv_item in inventory_items_to_consume:
+            consume_count = item_counts[inv_item.id]
+            if inv_item.qty < consume_count:
+                api_error(400, f"Insufficient quantity for item: {inv_item.item_template.name}", status_code=400)
+            
+            # Add the template to the synthesis list for each unit consumed
+            for _ in range(consume_count):
+                item_templates_to_synthesize.append(inv_item.item_template)
+            
+            # Decrement or delete the item
+            inv_item.qty -= consume_count
+            if inv_item.qty <= 0:
+                db.delete(inv_item)
+        
+        # Commit the consumption of materials first
+        db.commit()
+
+        # 4. Call the AI synthesis logic and add the new item
+        try:
+            new_item_template = await synthesis.synthesize_item_async(
+                item_templates_to_synthesize,
+                db,
+                current_user_discord_id=current_user.discord_id,
+                current_user_level=current_user.level
+            )
+
+            # 5. Add the new item to the user's inventory
+            new_inventory_item = models_db.InventoryItem(
+                discord_id=current_user.discord_id,
+                item_template_id=new_item_template.id,
+                qty=1,
+                note=f"Synthesized from {total_consumed} items."
+            )
+            db.add(new_inventory_item)
+
+            # 6. Commit the new item
+            db.commit()
+            db.refresh(new_item_template)
+
+            return new_item_template
+        
+        except (ValueError, ConnectionError) as e:
+            # Synthesis failed, but materials were already consumed.
+            # We just need to inform the user.
+            db.rollback() # Rollback the failed new_item creation
+            api_error(500, f"Synthesis failed: {str(e)}", status_code=500)
+
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        api_error(500, f"An unexpected error occurred: {str(e)}", status_code=500)
+        raise
 
 
 @app.post("/api/wallet/topup", response_model=WalletOut, tags=["Wallet"])
