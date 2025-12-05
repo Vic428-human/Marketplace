@@ -276,6 +276,14 @@
         border-style: solid;
         border-color: rgba(56, 189, 248, 0.4) transparent transparent transparent;
       }
+      .tag {
+        white-space: pre-line; /* 允許 \n 變成換行 */
+        text-align: center;    /* 可選：置中 */
+      }
+      .synthesis-disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
     </style>
   </head>
   <body class="pb-10">
@@ -460,12 +468,12 @@
             </div>
             <div id="bagGrid" class="grid grid-cols-3 sm:grid-cols-4 gap-3"></div>
             <div class="grid grid-cols-2 gap-3 pt-2">
-              <!--<button class="py-2.5 rounded-xl bg-gradient-to-r from-fuchsia-500 to-cyan-400 text-slate-900 font-semibold shadow-lg shadow-fuchsia-500/30 hover:scale-[1.01] transition text-sm">
-                分解
+              <button id="synthesisModeBtn" class="py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-cyan-400 text-slate-900 font-semibold shadow-lg shadow-sky-500/30 hover:scale-[1.01] transition text-sm">
+                合成
               </button>
-              <button class="py-2.5 rounded-xl bg-gradient-to-r from-emerald-400 to-lime-300 text-slate-900 font-semibold shadow-lg shadow-emerald-500/30 hover:scale-[1.01] transition text-sm">
-                販售
-              </button>-->
+              <button id="confirmSynthesisBtn" class="hidden py-2.5 rounded-xl bg-gradient-to-r from-emerald-400 to-lime-300 text-slate-900 font-semibold shadow-lg shadow-emerald-500/30 hover:scale-[1.01] transition text-sm">
+                確認合成
+              </button>
             </div>
           </div>
         </div>
@@ -543,7 +551,7 @@
     </div>
 
     <script>
-      const API_BASE = "https://built-spelling-conduct-providence.trycloudflare.com";
+      const API_BASE = "https://corps-pharmacy-considers-double.trycloudflare.com";
       const NGROK_BYPASS_HEADER = { "ngrok-skip-browser-warning": "true" };
       // 由後端回傳 next_exp_needed，這裡僅作 fallback
       const LEVEL_UP_EXP = 100;
@@ -565,7 +573,6 @@
       const progressBar = document.getElementById("progressBar");
       const tradeTitle = document.getElementById("tradeTitle");
       const walletBalance = document.getElementById("walletBalance");
-      const walletFrozen = document.getElementById("walletFrozen");
       const expLabel = document.getElementById("expLabel");
       const expBar = document.getElementById("expBar");
       const statPoints = document.getElementById("statPoints");
@@ -600,6 +607,10 @@
       const allocInt = document.getElementById("allocInt");
       const allocLuk = document.getElementById("allocLuk");
 
+      // Synthesis elements
+      const synthesisModeBtn = document.getElementById("synthesisModeBtn");
+      const confirmSynthesisBtn = document.getElementById("confirmSynthesisBtn");
+
       let currentUser = null;
       let profile = null;
       let wallet = null;
@@ -607,6 +618,10 @@
       let selectedBagItemId = null;
       let equippedSlots = new Array(8).fill(null);
       let currentModalItem = null;
+
+      // Synthesis state
+      let synthesisMode = false;
+      let selectedForSynthesis = {};
 
       function ensureUser() {
         try {
@@ -670,7 +685,7 @@
           stat_agility: Number(template.stat_agility || raw.stat_agility || 0),
           stat_intelligence: Number(template.stat_intelligence || raw.stat_intelligence || 0),
           stat_luck: Number(template.stat_luck || raw.stat_luck || 0),
-
+          description: template.description || "", // Add description
           acquired_at: raw.acquired_at,
           level: raw.level || 1,
         };
@@ -852,9 +867,7 @@
       function renderWalletUI() {
         if (!wallet) return;
         const balance = Number(wallet.balance || 0);
-        const frozen = Number(wallet.frozen_balance || 0);
         walletBalance.textContent = balance.toLocaleString() + " Z";
-        walletFrozen.textContent = frozen.toLocaleString();
       }
 
       const EQUIP_SLOTS = [
@@ -897,45 +910,133 @@
       }
 
       function renderBagUI(list) {
-        const maxSlots = 12;
-        const filled = list.slice(0, maxSlots);
-        const fragment = document.createDocumentFragment();
-        filled.forEach((item) => {
-          const cell = document.createElement("div");
-          const isSelected = selectedBagItemId === item.id;
-          const isEquipped = equippedSlots.some((eq) => eq && eq.id === item.id);
-          cell.className = "grid-slot active" + (isSelected ? " selected" : "") + (isEquipped ? " equipped" : "");
-          const name = document.createElement("div");
-          name.className = `text-sm font-semibold ${rarityClass(item.rarity)}`;
-          name.textContent = item.name || "道具";
-          const qty = document.createElement("div");
-          qty.className = "tag";
-          qty.textContent = `x${item.qty || 1}`;
-          const meta = document.createElement("div");
-          meta.className = "tag";
-          meta.textContent = item.slot_type ? `類別：${slotLabel(item.slot_type)}` : "";
-          cell.append(name, qty, meta);
-          cell.addEventListener("click", () => {
-            selectedBagItemId = selectedBagItemId === item.id ? null : item.id;
-            renderBagUI(inventory);
-            const slotUpper = (item.slot_type || "").toUpperCase();
-            const equipable = EQUIP_SLOTS.some((s) => s.slot_type === slotUpper);
-            if (!equipable) return; // 類別為「其他」或無對應槽位時不開啟裝備視窗
-            renderEquipModal(item);
-          });
-          fragment.appendChild(cell);
-        });
-        for (let i = filled.length; i < maxSlots; i++) {
-          const empty = document.createElement("div");
-          empty.className = "grid-slot";
-          empty.innerHTML = '<div class="text-slate-500 text-sm">空格</div>';
-          fragment.appendChild(empty);
-        }
-        bagGrid.innerHTML = "";
-        bagGrid.appendChild(fragment);
-        const totalQty = list.reduce((s, it) => s + Number(it.qty || 0), 0);
-        bagCount.textContent = `${totalQty} / 500`;
+  const maxSlots = 12;
+  const filled = list.slice(0, maxSlots);
+  const fragment = document.createDocumentFragment();
+
+  // 每次重畫先清空
+  bagGrid.innerHTML = "";
+
+  filled.forEach((item) => {
+    // 合成模式下，這個 item 已經被選了幾個
+    const selectedCount = synthesisMode ? (selectedForSynthesis[item.id] || 0) : 0;
+    // 一般模式下，是否是目前選來看詳細資訊的
+    const isSelected = !synthesisMode && selectedBagItemId === item.id;
+    // 是否是目前裝備中的
+    const isEquipped = equippedSlots.some((eq) => eq && eq.id === item.id);
+
+    const cell = document.createElement("div");
+    cell.className =
+      "grid-slot active" +
+      (isSelected ? " selected" : "") +
+      (isEquipped ? " equipped" : "") +
+      (selectedCount > 0 ? " synthesis-selected" : "") +
+      (synthesisMode && isEquipped ? " synthesis-disabled" : "");
+
+    const name = document.createElement("div");
+    name.className = `text-sm font-semibold ${rarityClass(item.rarity)}`;
+    name.textContent = item.name || "道具";
+
+    const qty = document.createElement("div");
+    qty.className = "tag";
+    qty.textContent = `x${item.qty || 1}`;
+
+    const meta = document.createElement("div");
+    meta.className = "tag";
+    if (synthesisMode) {
+      if (isEquipped) {
+        meta.textContent = "已裝備中，無法合成";
+      } else {
+        meta.textContent =
+          selectedCount > 0
+            ? `合成中：${selectedCount}/${item.qty || 1}`
+            : "點擊選擇\n合成數量"; // 用 \n 斷行
       }
+    } else {
+      meta.textContent = item.slot_type
+        ? `類別：${slotLabel(item.slot_type)}`
+        : "";
+    }
+
+    cell.append(name, qty, meta);
+
+    cell.addEventListener("click", () => {
+  if (synthesisMode) {
+    // 1) 裝備中的不能當素材
+    if (isEquipped) {
+      return;
+    }
+
+    const maxQty = item.qty || 1;
+    const current = selectedForSynthesis[item.id] || 0;
+
+    // 2) 計算目前已選的「總件數」
+    const totalSelected = Object.values(selectedForSynthesis)
+      .reduce((sum, c) => sum + c, 0);
+
+    // 3) 準備下一個數量：0(未選) → 1 → 2 → ... → maxQty → 0(取消)
+    let next = current + 1;
+
+    if (next > maxQty) {
+      // 循環回 0：這是「減少」選取，總數會變少 → 永遠允許
+      next = 0;
+    } else {
+      // 這裡是「從 current 增加 1」
+      // 如果目前總數已經 >= 2，就不允許再多選
+      if (totalSelected >= 2) {
+        alert("一次最多只能選取兩件素材進行合成。");
+        return;
+      }
+      // （totalSelected 一定 <= 1，所以 totalSelected + 1 <= 2，安全）
+    }
+
+    if (next === 0) {
+      delete selectedForSynthesis[item.id];  // 取消選取
+    } else {
+      selectedForSynthesis[item.id] = next;  // 更新選取數量
+    }
+
+    renderBagUI(inventory);
+    return;
+  }
+
+  // ⬇️ 下面保持你原本的非合成模式邏輯
+  const isCurrentlySelectedForModal = selectedBagItemId === item.id;
+
+  Array.from(bagGrid.children).forEach((child) => {
+    child.classList.remove("selected");
+  });
+
+  if (isCurrentlySelectedForModal) {
+    selectedBagItemId = null;
+  } else {
+    selectedBagItemId = item.id;
+    cell.classList.add("selected");
+
+    const slotUpper = (item.slot_type || "").toUpperCase();
+    const equipable = EQUIP_SLOTS.some((s) => s.slot_type === slotUpper);
+    if (equipable) {
+      renderEquipModal(item);
+    }
+  }
+});
+
+    fragment.appendChild(cell);
+  });
+
+  // 空格
+  for (let i = filled.length; i < maxSlots; i++) {
+    const empty = document.createElement("div");
+    empty.className = "grid-slot";
+    empty.innerHTML = '<div class="text-slate-500 text-sm">空格</div>';
+    fragment.appendChild(empty);
+  }
+
+  bagGrid.appendChild(fragment);
+
+  const totalQty = list.reduce((s, it) => s + Number(it.qty || 0), 0);
+  bagCount.textContent = `${totalQty} / 500`;
+}
 
       async function loadProfile() {
         if (!currentUser) return;
@@ -950,47 +1051,37 @@
       }
 
       async function loadInventory() {
-  if (!currentUser) return;
-  const summary = await fetchJSON(`/api/inventory/${encodeURIComponent(currentUser.discord_id)}/summary`);
-  const items = Array.isArray(summary?.items) ? summary.items : [];
-  const normalized = items
-    .map((it) => normalizeInventoryItem(it))
-    .filter((it) => (it.qty || 0) > 0);
-  inventory = normalized;
+        if (!currentUser) return;
+        const summary = await fetchJSON(`/api/inventory/${encodeURIComponent(currentUser.discord_id)}/summary`);
+        const items = Array.isArray(summary?.items) ? summary.items : [];
+        const normalized = items
+          .map((it) => normalizeInventoryItem(it))
+          .filter((it) => (it.qty || 0) > 0);
+        inventory = normalized;
 
-  if (profile) {
-    const mapped = EQUIP_SLOTS.map((slot) => {
-      const idKey = `equip_${slot.key}_id`;   // 例如 equip_weapon_id
-      const targetTemplateId = profile[idKey]; // 這是 template_id
+        if (profile) {
+          const mapped = EQUIP_SLOTS.map((slot) => {
+            const idKey = `equip_${slot.key}_id`;
+            const targetTemplateId = profile[idKey];
+            if (!targetTemplateId) return null;
+            return normalized.find((it) => it.item_template_id === targetTemplateId) || null;
+          });
+          const allNull = mapped.every((x) => !x);
+          equippedSlots = allNull ? new Array(EQUIP_SLOTS.length).fill(null) : mapped;
+        } else if (equippedSlots.every((x) => !x)) {
+          equippedSlots = buildEquippedFromInventory(normalized);
+        } else {
+          equippedSlots = equippedSlots.map((eq) => (eq && normalized.find((it) => it.id === eq.id)) || null);
+        }
 
-      if (!targetTemplateId) return null;
+        renderEquipUI(equippedSlots);
+        renderBagUI(normalized);
 
-      // 用 template_id 對應到背包中的實際 item
-      return (
-        normalized.find((it) => it.item_template_id === targetTemplateId) ||
-        null
-      );
-    });
-
-    const allNull = mapped.every((x) => !x);
-    equippedSlots = allNull ? new Array(EQUIP_SLOTS.length).fill(null) : mapped;
-  } else if (equippedSlots.every((x) => !x)) {
-    equippedSlots = buildEquippedFromInventory(normalized);
-  } else {
-    // 清掉已不存在的
-    equippedSlots = equippedSlots.map((eq) => (eq && normalized.find((it) => it.id === eq.id)) || null);
-  }
-
-  const equipItems = equippedSlots;
-  renderEquipUI(equipItems);
-  renderBagUI(normalized);
-
-  if (summary && typeof summary.total_qty === "number") {
-    const cap = summary.capacity || 500;
-    bagCount.textContent = `${summary.total_qty} / ${cap}`;
-  }
-}
-
+        if (summary && typeof summary.total_qty === "number") {
+          const cap = summary.capacity || 500;
+          bagCount.textContent = `${summary.total_qty} / ${cap}`;
+        }
+      }
 
       function setupMobileMenu() {
         if (!mobileMenuBtn || !mobileMenu || !mobilePanel || !mobileOverlay) return;
@@ -1014,42 +1105,28 @@
         window.location.href = "index.html";
       }
 
-      // 前端 user_profiles.html 內
-
       async function persistEquipment() {
-  if (!currentUser) return;
-
-  // 從 normalizeInventoryItem 可以確定有 item_template_id 欄位 :contentReference[oaicite:8]{index=8}
-  const tmplId = (slot) =>
-    slot ? slot.item_template_id || slot.template_id || null : null;
-
-  const payload = {
-    weapon_template_id: tmplId(equippedSlots[0]),
-    shield_template_id: tmplId(equippedSlots[1]),
-    armor_template_id: tmplId(equippedSlots[2]),
-    cloak_template_id: tmplId(equippedSlots[3]),
-    head_template_id: tmplId(equippedSlots[4]),
-    ring_template_id: tmplId(equippedSlots[5]),
-    acc1_template_id: tmplId(equippedSlots[6]),
-    acc2_template_id: tmplId(equippedSlots[7]),
-  };
-
-  try {
-    const updated = await fetchJSON(
-      `/api/users/${encodeURIComponent(currentUser.discord_id)}/equipment`,
-      {
-        method: "POST",
-        body: payload,
+        if (!currentUser) return;
+        const tmplId = (slot) => (slot ? slot.item_template_id || null : null);
+        const payload = {
+          weapon_template_id: tmplId(equippedSlots[0]),
+          shield_template_id: tmplId(equippedSlots[1]),
+          armor_template_id: tmplId(equippedSlots[2]),
+          cloak_template_id: tmplId(equippedSlots[3]),
+          head_template_id: tmplId(equippedSlots[4]),
+          ring_template_id: tmplId(equippedSlots[5]),
+          acc1_template_id: tmplId(equippedSlots[6]),
+          acc2_template_id: tmplId(equippedSlots[7]),
+        };
+        try {
+          const updated = await fetchJSON(`/api/users/${encodeURIComponent(currentUser.discord_id)}/equipment`, {
+            method: "POST", body: payload });
+          profile = updated;
+          renderProfileUI();
+        } catch (err) {
+          console.error("儲存裝備失敗", err);
+        }
       }
-    );
-    profile = updated;
-    renderProfileUI();  // ★ 新增這行：用最新 profile 重畫能力值 / 等級 / exp 等
-  } catch (err) {
-    console.error("儲存裝備失敗", err);
-  }
-}
-
-
 
       async function submitStatPoints() {
         if (!profile || !currentUser) return;
@@ -1071,9 +1148,7 @@
         }
         try {
           const updated = await fetchJSON(`/api/users/${encodeURIComponent(currentUser.discord_id)}/allocate-points`, {
-            method: "POST",
-            body: payload,
-          });
+            method: "POST", body: payload });
           profile = updated;
           renderProfileUI();
           closeStatModal();
@@ -1081,19 +1156,85 @@
           alert(err.message || "分配失敗");
         }
       }
+      
+      function setupSynthesis() {
+  synthesisModeBtn.addEventListener("click", () => {
+    synthesisMode = !synthesisMode;
+    selectedForSynthesis = {}; // 切換模式時清空
+    synthesisModeBtn.textContent = synthesisMode ? "取消合成" : "合成";
+    confirmSynthesisBtn.classList.toggle("hidden", !synthesisMode);
+    renderBagUI(inventory);
+  });
+
+  confirmSynthesisBtn.addEventListener("click", async () => {
+    // 把 { id: count } 展開成 [id, id, id...]
+    const inventoryItemIds = [];
+    for (const [id, count] of Object.entries(selectedForSynthesis)) {
+      for (let i = 0; i < count; i++) {
+        inventoryItemIds.push(Number(id));
+      }
+    }
+
+    if (inventoryItemIds.length < 2) {
+      alert("請至少選擇兩件物品來合成。");
+      return;
+    }
+
+    confirmSynthesisBtn.disabled = true;
+    confirmSynthesisBtn.textContent = "合成中...";
+
+    try {
+      const payload = {
+        discord_id: currentUser.discord_id,
+        inventory_item_ids: inventoryItemIds, // 可以包含重複 ID
+      };
+      const newItemTemplate = await fetchJSON("/api/synthesis", {
+        method: "POST",
+        body: payload,
+      });
+
+      alert(
+        `合成成功！\n獲得新物品：${newItemTemplate.name}\n${newItemTemplate.description}`,
+      );
+
+      synthesisMode = false;
+      selectedForSynthesis = {};
+      synthesisModeBtn.textContent = "合成";
+      confirmSynthesisBtn.classList.add("hidden");
+      await loadInventory();
+    } catch (err) {
+      alert(`合成失敗：${err.message || "未知錯誤"}`);
+      // Reload inventory to reflect consumed materials
+      await loadInventory();
+    } finally {
+      confirmSynthesisBtn.disabled = false;
+      confirmSynthesisBtn.textContent = "確認合成";
+    }
+  });
+}
+
+
+
 
       async function init() {
         ensureUser();
         setupMobileMenu();
+        setupSynthesis(); // Setup synthesis listeners
         try {
           await loadProfile();
-        } catch {}
+        } catch (e) {
+          console.error("Error loading profile:", e);
+        }
         try {
           await loadWallet();
-        } catch {}
+        } catch (e) {
+          console.error("Error loading wallet:", e);
+        }
         try {
           await loadInventory();
-        } catch {}
+        } catch (e) {
+          console.error("Error loading inventory:", e);
+        }
         if (logoutBtnDesktop) logoutBtnDesktop.addEventListener("click", logout);
         if (logoutBtnMobile) logoutBtnMobile.addEventListener("click", logout);
         if (equipModalClose) equipModalClose.addEventListener("click", closeEquipModal);
