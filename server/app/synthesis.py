@@ -9,7 +9,7 @@ from opencc import OpenCC # Import OpenCC
 SYNTHESIS_SUCCESS_RATE = 0.8  # 80% chance of success
 
 # Initialize OpenCC for Simplified to Traditional Chinese conversion
-cc = OpenCC('s2t.json') 
+cc = OpenCC('s2t') 
 
 
 from pydantic import BaseModel, Field # Import Field here
