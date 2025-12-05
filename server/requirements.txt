@@ -4,3 +4,5 @@ pydantic
 sqlalchemy
 requests
 opencc-python-reimplemented
+google-generativeai
+python-dotenv

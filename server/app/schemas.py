@@ -290,5 +290,10 @@ class DungeonMonsterAttach(BaseModel):
     monster_id: int
 
 
+class SynthesisCreate(BaseModel):
+    discord_id: str
+    inventory_item_ids: List[int] = Field(..., min_items=2, description="List of inventory item IDs to combine.")
+
+
 # Resolve forward refs
 MonsterOut.update_forward_refs()

@@ -2,7 +2,7 @@
 from datetime import datetime, timezone
 from typing import List
 
-from sqlalchemy import String, Integer, Numeric, ForeignKey, DateTime, Text, Column, func
+from sqlalchemy import String, Integer, Numeric, ForeignKey, DateTime, Text, Column, func, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .db import Base
@@ -56,6 +56,7 @@ class ItemTemplate(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text)
     rarity: Mapped[str] = mapped_column(String(20), default="COMMON")
     slot_type: Mapped[str] = mapped_column(String(20), default="MISC")  # WEAPON/SHIELD/ARMOR/HEAD/RING/ACCESSORY/MISC
     initial_price: Mapped[float] = mapped_column(Numeric(20, 2), default=0)
@@ -64,6 +65,7 @@ class ItemTemplate(Base):
     stat_agility: Mapped[int] = mapped_column(Integer, default=0)
     stat_intelligence: Mapped[int] = mapped_column(Integer, default=0)
     stat_luck: Mapped[int] = mapped_column(Integer, default=0)
+    is_generated: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )

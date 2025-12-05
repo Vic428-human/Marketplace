@@ -285,7 +285,7 @@
     </div>
     <script>
       // 後端 API 基底：已替換為你的 ngrok URL
-      const API_BASE = "https://built-spelling-conduct-providence.trycloudflare.com";
+      const API_BASE = "https://corps-pharmacy-considers-double.trycloudflare.com";
       const NGROK_BYPASS_HEADER = { "ngrok-skip-browser-warning": "true" };
       const LEVEL_UP_EXP = 100;
 
@@ -812,7 +812,7 @@
             <div class="flex items-center justify-between text-sm">
               <span class="font-semibold">${item.name}</span>
             </div>
-            <div class="text-[11px] text-slate-400 mt-0.5">裝備 #${item.id} · 稀有度 ${rarityLabel(item.rarity)}</div>
+            <div class="text-[11px] text-slate-400 mt-0.5">· 稀有度 ${rarityLabel(item.rarity)}</div>
           `;
           row.addEventListener("click", () => {
             selectItem(item);

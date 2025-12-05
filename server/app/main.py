@@ -1276,6 +1276,7 @@ def create_monster(payload: MonsterCreate, db: Session = Depends(get_db)):
         defense=payload.defense,
         icon=payload.icon,
     )
+    
     monster.skill_categories = categories
     db.add(monster)
     db.commit()

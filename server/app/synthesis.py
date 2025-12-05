@@ -5,11 +5,30 @@ import uuid
 import random
 from sqlalchemy.orm import Session
 from opencc import OpenCC # Import OpenCC
+import random
 
 SYNTHESIS_SUCCESS_RATE = 0.8  # 80% chance of success
 
+SYNTHESIS_TYPE_PROBABILITIES = {
+    "weapon": 0.1,
+    "shield": 0.1,
+    "armor": 0.1,
+    "head": 0.1,
+    "ring": 0.1,
+    "accessory": 0.1,
+    "misc": 0.4,
+}
+
+RARITY_THRESHOLDS = {
+    "UR": 5,
+    "SSR": 4,
+    "SR": 3,
+    "R": 2,
+    "N": 0,
+}
+
 # Initialize OpenCC for Simplified to Traditional Chinese conversion
-cc = OpenCC('s2t') 
+cc = OpenCC('s2t')  
 
 
 from pydantic import BaseModel, Field # Import Field here
@@ -63,12 +82,20 @@ class GeneratedItem(BaseModel):
     flavor_text: str
     meta: Dict[str, Any]
 
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
 # -----------------------
-# Ollama 配置與提示 (從 llm.py 複製而來)
+# Gemini (was Ollama) Configuration & Prompt
 # -----------------------
 
-OLLAMA_URL = "http://127.0.0.1:11434/api/chat"
-MODEL_NAME = "qwen2.5:7b"  # 使用者指定的模型
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
+GEMINI_MODEL = "gemini-2.0-flash"
+
 
 SYSTEM_PROMPT = """
 你是一個 RPG 遊戲設計AI，專門產生「裝備合成結果」。
@@ -164,8 +191,11 @@ def build_user_prompt(req: SynthesisRequest) -> str:
 
 async def synthesize_item_async(input_item_templates: List[models_db.ItemTemplate], db: Session, current_user_discord_id: str, current_user_level: int) -> models_db.ItemTemplate:
     """
-    Handles the item synthesis process by calling a local Ollama model (via requests).
+    Handles the item synthesis process by calling the Gemini API.
     """
+    if not GEMINI_API_KEY or GEMINI_API_KEY == "YOUR_API_KEY_HERE":
+        raise ConnectionError("GEMINI_API_KEY is not set. Please set it in the server/.env file.")
+
     # Simulate synthesis failure based on success rate
     if random.random() > SYNTHESIS_SUCCESS_RATE:
         raise ValueError("合成失敗，你的材料已消失在虛空中！")
@@ -174,110 +204,92 @@ async def synthesize_item_async(input_item_templates: List[models_db.ItemTemplat
         raise ValueError("Synthesis requires at least one input item.")
 
     # 1. 準備 SynthesisRequest
-    materials_for_ollama = [
+    materials_for_gemini = [
         Material(
             id=str(item.id),
             name=item.name,
-            element=item.slot_type, # Using slot_type as a proxy for element
-            grade=item.rarity # Using rarity as a proxy for grade
+            element=item.slot_type,
+            grade=item.rarity
         )
         for item in input_item_templates
     ]
 
-    # 簡單推斷合成物品的類型和稀有度
-    # 可以根據實際需求設計更複雜的推斷邏輯
-    target_type_counts = {}
+    types = list(SYNTHESIS_TYPE_PROBABILITIES.keys())
+    probabilities = list(SYNTHESIS_TYPE_PROBABILITIES.values())
+    target_type = random.choices(types, probabilities, k=1)[0]
+    
     rarity_counts = {}
     for item in input_item_templates:
-        target_type_counts[item.slot_type] = target_type_counts.get(item.slot_type, 0) + 1
         rarity_counts[item.rarity] = rarity_counts.get(item.rarity, 0) + 1
     
-    # 取最多的類型作為合成目標類型 (從數據庫類型轉化為 GeneratedItem 的 Literal)
-    # 預設為 "weapon"
-    target_type = "weapon"
-    if target_type_counts:
-        inferred_type = max(target_type_counts, key=target_type_counts.get).lower()
-        if inferred_type in ["weapon", "shield", "armor", "head", "ring", "accessory", "misc"]:
-            target_type = inferred_type
-    
-    # 取最高的稀有度作為期望稀有度 (從數據庫類型轉化為 GeneratedItem 的 Literal)
-    # 預設為 "N"
     target_rarity = "N"
     if rarity_counts:
         inferred_rarity_db_format = max(rarity_counts, key=rarity_counts.get).upper()
-        # 轉換為 GeneratedItem.rarity 的 Literal 格式
-        db_rarity_to_ollama_rarity = {
-            "COMMON": "N",
-            "UNCOMMON": "R",
-            "RARE": "SR",
-            "EPIC": "SSR",
-            "LEGENDARY": "UR"
+        db_rarity_to_api_rarity = {
+            "COMMON": "N", "UNCOMMON": "R", "RARE": "SR", "EPIC": "SSR", "LEGENDARY": "UR"
         }
-        target_rarity = db_rarity_to_ollama_rarity.get(inferred_rarity_db_format, "N")
-
+        target_rarity = db_rarity_to_api_rarity.get(inferred_rarity_db_format, "N")
 
     synthesis_req_payload = SynthesisRequest(
         player_id=current_user_discord_id,
         player_level=current_user_level,
-        lang="zh-TW", # Hardcode for now, could be dynamic
+        lang="zh-TW",
         target_type=target_type,
         rarity=target_rarity,
-        materials=materials_for_ollama,
-        constraints=Constraints(), # Default constraints for now
+        materials=materials_for_gemini,
+        constraints=Constraints(),
         seed=None
     )
 
     # 2. 建立使用者提示
     user_prompt = build_user_prompt(synthesis_req_payload)
-
+    
+    # Gemini uses a different payload structure
     payload = {
-        "model": MODEL_NAME,
-        "messages": [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": user_prompt}
-        ],
-        "stream": False # We want a single response
+        "contents": [{
+            "parts": [{"text": SYSTEM_PROMPT + "\n" + user_prompt}]
+        }],
+        "generationConfig": {
+            "response_mime_type": "application/json",
+        }
     }
 
-    # 3. 呼叫 Ollama API
+    # 3. 呼叫 Gemini API
     try:
-        resp = requests.post(OLLAMA_URL, json=payload, timeout=120)
+        resp = requests.post(GEMINI_API_URL, json=payload, timeout=120)
     except requests.exceptions.ConnectionError as e:
-        raise ConnectionError(f"Ollama 連線失敗: {e}. 請確認 Ollama 服務正在運行且模型 '{MODEL_NAME}' 已下載。")
+        raise ConnectionError(f"Gemini API 連線失敗: {e}.")
     except Exception as e:
-        raise ConnectionError(f"呼叫 Ollama 服務時發生未知錯誤: {e}")
+        raise ConnectionError(f"呼叫 Gemini API 服務時發生未知錯誤: {e}")
 
     if resp.status_code != 200:
-        raise ConnectionError(f"Ollama 服務回傳錯誤 (狀態碼: {resp.status_code}): {resp.text}")
-
-    data = resp.json()
-    content = data.get("message", {}).get("content", "").strip()
-    print('=======content:',content)
-
-    # 有些模型偶爾會在 JSON 前後加 ```json ```，這裡粗暴清一下
-    if content.startswith("```"):
-        content = content.strip("`")
-        content = content.replace("json", "", 1).strip()
+        raise ConnectionError(f"Gemini API 服務回傳錯誤 (狀態碼: {resp.status_code}): {resp.text}")
 
     # 4. 解析 JSON 回覆
     try:
+        data = resp.json()
+        
+        # Check for prompt feedback which indicates the prompt was blocked
+        if 'promptFeedback' in data and data['promptFeedback']['blockReason'] != 'BLOCK_REASON_UNSPECIFIED':
+             raise ValueError(f"Gemini API 提示被阻擋，原因: {data['promptFeedback']['blockReason']}")
+
+        content = data["candidates"][0]["content"]["parts"][0]["text"]
+        
+        # The response should already be JSON, so no need to strip ```json
         generated_item_data = json.loads(content)
-        # 補上 meta 欄位的一些資訊 (從 llm.py 複製)
+        
         meta = generated_item_data.get("meta", {})
         meta.setdefault("seed", synthesis_req_payload.seed)
-        meta.setdefault("generated_by", MODEL_NAME)
+        meta.setdefault("generated_by", GEMINI_MODEL)
         meta.setdefault("safety_filtered", True)
         generated_item_data["meta"] = meta
 
-        # 驗證並創建 GeneratedItem Pydantic 模型
         generated_item = GeneratedItem(**generated_item_data)
 
-        # If the item is 'misc', ensure it has no stats as per user's requirement.
         if generated_item.type == "misc":
             generated_item.main_stat.value = 0
             generated_item.sub_stats = []
 
-        # Convert all relevant text fields to Traditional Chinese
         generated_item.name = cc.convert(generated_item.name)
         generated_item.flavor_text = cc.convert(generated_item.flavor_text)
         if generated_item.special_effect.name:
@@ -285,32 +297,30 @@ async def synthesize_item_async(input_item_templates: List[models_db.ItemTemplat
         if generated_item.special_effect.description:
             generated_item.special_effect.description = cc.convert(generated_item.special_effect.description)
 
-    except json.JSONDecodeError as e:
-        raise ValueError(f"Ollama 回傳的不是合法 JSON，錯誤: {e}. 原始內容: {content[:500]}...")
-    except Exception as e:
-        raise ValueError(f"解析 Ollama 回覆失敗: {e}. 原始內容: {content[:500]}...")
+        total_stats = generated_item.main_stat.value + sum(s.value for s in generated_item.sub_stats)
+        new_rarity = "N"
+        for rarity, threshold in sorted(RARITY_THRESHOLDS.items(), key=lambda item: item[1], reverse=True):
+            if total_stats >= threshold:
+                new_rarity = rarity
+                break
+        generated_item.rarity = new_rarity
 
+    except (json.JSONDecodeError, KeyError, IndexError) as e:
+        raise ValueError(f"Gemini API 回傳的不是預期的格式，錯誤: {e}. 原始內容: {resp.text[:500]}...")
+    except Exception as e:
+        raise ValueError(f"解析 Gemini API 回覆失敗: {e}. 原始內容: {resp.text[:500]}...")
 
     # 5. 轉換為 models_db.ItemTemplate 並儲存
-    # 將 GeneratedItem.rarity (N, R, SR, SSR, UR) 轉換為 models_db.ItemTemplate.rarity (COMMON, UNCOMMON, RARE, EPIC, LEGENDARY)
-    rarity_ollama_to_db = {
-        "N": "COMMON",
-        "R": "UNCOMMON",
-        "SR": "RARE",
-        "SSR": "EPIC",
-        "UR": "LEGENDARY"
+    rarity_api_to_db = {
+        "N": "COMMON", "R": "UNCOMMON", "SR": "RARE", "SSR": "EPIC", "UR": "LEGENDARY"
     }
-    
-    # 將 GeneratedItem.type 轉換為 models_db.ItemTemplate.slot_type
-    # 這裡假設 GeneratedItem.type 會直接與 models_db.ItemTemplate.slot_type 的大寫形式匹配
-    # 例如 "weapon" -> "WEAPON"
     
     new_item_template = models_db.ItemTemplate(
         name=generated_item.name,
         description=f"{generated_item.flavor_text}\n\n特殊效果: {generated_item.special_effect.name if generated_item.special_effect.name else '無' } - {generated_item.special_effect.description if generated_item.special_effect.description else '無'}",
-        rarity=rarity_ollama_to_db.get(generated_item.rarity, "COMMON"), # 使用轉換後的稀有度
-        slot_type=generated_item.type.upper(), # 直接使用轉換後的大寫類型
-        initial_price=0, # 初始價格為 0，可後續設定
+        rarity=rarity_api_to_db.get(generated_item.rarity, "COMMON"),
+        slot_type=generated_item.type.upper(),
+        initial_price=0,
         stat_attack=int(generated_item.main_stat.value if generated_item.main_stat.name == "攻擊力" else 0),
         stat_defense=int(generated_item.main_stat.value if generated_item.main_stat.name == "防禦力" else 0),
         stat_agility=int(generated_item.main_stat.value if generated_item.main_stat.name == "敏捷" else 0),
@@ -319,7 +329,6 @@ async def synthesize_item_async(input_item_templates: List[models_db.ItemTemplat
         is_generated=True
     )
     
-    # 處理 sub_stats
     for sub_stat in generated_item.sub_stats:
         if sub_stat.name == "攻擊力":
             new_item_template.stat_attack += int(sub_stat.value)

@@ -46,6 +46,16 @@
         0% { transform: translateX(0); }
         100% { transform: translateX(-50%); }
       }
+      .nice-scroll::-webkit-scrollbar {
+        width: 6px;
+      }
+      .nice-scroll::-webkit-scrollbar-track {
+        background: #0f172a;
+      }
+      .nice-scroll::-webkit-scrollbar-thumb {
+        background: linear-gradient(180deg, #38bdf8, #a855f7);
+        border-radius: 999px;
+      }
     </style>
   </head>
   <body class="min-h-screen">
@@ -155,7 +165,7 @@
               </div>
               <span class="text-[11px] px-2 py-1 rounded-full bg-cyan-500/15 border border-cyan-400/40 text-cyan-100">Readme</span>
             </div>
-            <div class="rounded-xl border border-slate-800 bg-slate-900/70 p-3 max-h-56 overflow-y-auto text-sm text-slate-200 leading-relaxed space-y-1">
+            <div class="rounded-xl border border-slate-800 bg-slate-900/70 p-3 max-h-56 overflow-y-auto text-sm text-slate-200 leading-relaxed space-y-1 nice-scroll">
               <pre id="announcementContent" class="whitespace-pre-wrap font-mono text-[13px] text-slate-200">載入中...</pre>
             </div>
           </div>
@@ -231,7 +241,7 @@
 
     <!-- Scripts：沿用原本邏輯 -->
     <script>
-      const API_BASE = 'https://built-spelling-conduct-providence.trycloudflare.com';
+      const API_BASE = 'https://corps-pharmacy-considers-double.trycloudflare.com';
       const NGROK_BYPASS_HEADER = { 'ngrok-skip-browser-warning': 'true' };
 
       async function fetchJSON(path, options = {}) {
