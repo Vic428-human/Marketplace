@@ -1,12 +1,20 @@
 import React, { useState, useRef } from "react";
 import SVGComponent from "./SVGComponent";
+import { useNavigate } from "react-router-dom";
 
-export default function HeroSection() {
-  const [menuOpen, setMenuOpen] = React.useState(false);
+export default function Hero() {
+  const [input, setInput] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
-
   const [isOpen, setIsOpen] = useState(false);
   const closeTimeout = useRef<number | null>(null);
+
+  const navigate = useNavigate();
+
+  const onSubmitHandler = (e) => {
+    e.preventDefault();
+    navigate(`/marketplace?search=${input}`);
+  };
 
   const handleMouseEnter = () => {
     if (closeTimeout.current) {
@@ -23,21 +31,15 @@ export default function HeroSection() {
     }, 150); // 150ms 延遲，避免快速移動導致消失
   };
 
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText("npx prisma@latest init --db");
-    setIsCopied(true);
-    setTimeout(() => setIsCopied(false), 3000);
-  };
-
   // https://prebuiltui.com/components/hero-section#hero-section-with-banner-84fb
   //  參考上面版型
 
   return (
     <>
       <section className="flex flex-col items-center bg-gradient-to-b from-black to-[#1A0033] text-white pb-16 text-sm overflow-hidden relative">
-        <div class="w-full py-2.5 font-medium text-sm text-white text-center bg-gradient-to-r from-[#4F39F6] to-[#FDFEFF]">
+        <div className="w-full py-2.5 font-medium text-sm text-white text-center bg-gradient-to-r from-[#4F39F6] to-[#FDFEFF]">
           <p>
-            <span class="px-3 py-1 rounded-md text-indigo-600 bg-white mr-2">
+            <span className="px-3 py-1 rounded-md text-indigo-600 bg-white mr-2">
               官方公告:
             </span>
             預計 2025 年 12 月 31 日上線
@@ -146,7 +148,6 @@ export default function HeroSection() {
           </button>
         </div>
 
-        {/* TODO: 預期放最新一筆玩家刊登的道具 */}
         <div className="flex flex-wrap items-center justify-center p-1.5 mt-32 rounded-full border border-indigo-900 text-xs">
           <div className="flex items-center -space-x-3">
             <img
@@ -166,42 +167,24 @@ export default function HeroSection() {
           平均 47 秒就有人出價，你還在等什麼？
         </p>
 
-        {/* Code Snippet */}
-        <div className="bg-gradient-to-t from-indigo-900 to-slate-600 p-px rounded-md mt-8">
-          <div className="flex items-center justify-between bg-black rounded-md px-4 py-3">
-            <span className="font-mono text-sm">推薦馬</span>
-            <button onClick={handleCopy} className="transition">
-              {isCopied ? (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="17"
-                  height="17"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#fff"
-                  strokeWidth="2"
-                >
-                  <path d="M20 6 9 17l-5-5" />
-                </svg>
-              ) : (
-                <svg width="17" height="17" viewBox="0 0 17 17" fill="none">
-                  <path
-                    d="M14.498 5.5h-7.5a1.5 1.5 0 0 0-1.5 1.5v7.5a1.5 1.5 0 0 0 1.5 1.5h7.5a1.5 1.5 0 0 0 1.5-1.5V7a1.5 1.5 0 0 0-1.5-1.5"
-                    stroke="#fff"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M2.5 11.5c-.825 0-1.5-.675-1.5-1.5V2.5C1 1.675 1.675 1 2.5 1H10c.825 0 1.5.675 1.5 1.5"
-                    stroke="#fff"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              )}
+        {/* 搜尋特定物品導引去 marketplace  */}
+        <form
+          onSubmit={onSubmitHandler}
+          className="w-full flex justify-center group"
+        >
+          <label className="border border-gray-400 rounded-md p-1 flex items-center w-fㄋull max-w-md">
+            <input
+              onChange={(e) => setInput(e.target.value)}
+              value={input}
+              type="text"
+              placeholder="輸入虛寶關鍵字..."
+              className="pl-2 flex-1 outline-none"
+            />
+            <button className="bg-indigo-600 text-white p-3 px-6 rounded-md cursor-pointer">
+              查詢
             </button>
-          </div>
-        </div>
+          </label>
+        </form>
       </section>
     </>
   );
