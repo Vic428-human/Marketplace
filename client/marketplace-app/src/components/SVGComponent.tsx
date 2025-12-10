@@ -28,32 +28,32 @@ const SVGComponent = (props) => (
     <text
       x="200"
       y="70"
-      font-family="Arial, sans-serif"
-      font-size="48"
-      font-weight="bold"
+      fontFamily="Arial, sans-serif"
+      fontSize="48"
+      fontWeight="bold"
       fill="#FFFFFF"
-      text-anchor="start"
+      textAnchor="start"
     >
       秒寶
     </text>
     <text
       x="200"
       y="100"
-      font-family="Arial, sans-serif"
-      font-size="20"
+      fontFamily="Arial, sans-serif"
+      fontSize="20"
       fill="#00D4FF"
-      text-anchor="start"
+      textAnchor="start"
     >
       交易所
     </text>
     <text
       x="200"
       y="120"
-      font-family="Arial, sans-serif"
-      font-size="14"
+      fontFamily="Arial, sans-serif"
+      fontSize="14"
       fill="#FFFFFF"
       opacity="0.8"
-      text-anchor="start"
+      textAnchor="start"
     >
       EXCHANGE
     </text>

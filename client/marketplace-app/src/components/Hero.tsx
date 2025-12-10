@@ -1,34 +1,17 @@
 import React, { useState, useRef } from "react";
-import SVGComponent from "./SVGComponent";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import Navbar from "../pages/Navbar";
 
 export default function Hero() {
   const [input, setInput] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
-  const [isCopied, setIsCopied] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
-  const closeTimeout = useRef<number | null>(null);
+  const { pathname } = useLocation();
 
   const navigate = useNavigate();
 
-  const onSubmitHandler = (e) => {
+  const onSubmitHandler = (e: { preventDefault: () => void }) => {
     e.preventDefault();
     navigate(`/marketplace?search=${input}`);
-  };
-
-  const handleMouseEnter = () => {
-    if (closeTimeout.current) {
-      clearTimeout(closeTimeout.current);
-      closeTimeout.current = null;
-    }
-    setIsOpen(true);
-  };
-
-  const handleMouseLeave = () => {
-    closeTimeout.current = window.setTimeout(() => {
-      setIsOpen(false);
-      closeTimeout.current = null;
-    }, 150); // 150ms 延遲，避免快速移動導致消失
   };
 
   // https://prebuiltui.com/components/hero-section#hero-section-with-banner-84fb
@@ -50,12 +33,12 @@ export default function Hero() {
           <a href="https://prebuiltui.com"></a>
 
           {/* 電腦模式註冊*/}
-          <button className="hidden md:block bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-full transition">
+          <div className="hidden md:block bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-full transition">
             電腦模式註冊
-          </button>
+          </div>
 
           {/* 手機模式會出現漢堡選單 */}
-          <button
+          <div
             onClick={() => setMenuOpen(true)}
             className="md:hidden active:scale-90 transition"
           >
@@ -70,7 +53,7 @@ export default function Hero() {
             >
               <path d="M4 5h16M4 12h16M4 19h16" />
             </svg>
-          </button>
+          </div>
         </nav>
         {/* Mobile Menu */}
         <div
@@ -92,61 +75,7 @@ export default function Hero() {
           </button>
         </div>
         {/* 第二層 Nav */}
-        <div className="flex items-center border mx-4 w-full max-w-4xl justify-between border-slate-700 px-4 py-2.5 rounded-full text-white">
-          <SVGComponent />
-
-          <div className="flex-1 flex justify-center">
-            <div
-              id="menu"
-              className="max-md:absolute max-md:bg-black/50 max-md:backdrop-blur max-md:top-0 transition-all duration-300 max-md:h-full max-md:w-full max-md:z-10 max-md:-left-full max-md:justify-center flex-col md:flex-row flex items-center gap-2"
-            >
-              <div className="px-4 py-2">首頁</div>
-
-              <div
-                className="relative"
-                onMouseEnter={handleMouseEnter}
-                onMouseLeave={handleMouseLeave}
-              >
-                <div className="flex items-center gap-1 hover:text-gray-300">
-                  <span>市集</span>
-                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                    <path
-                      d="m4.5 7.2 3.793 3.793a1 1 0 0 0 1.414 0L13.5 7.2"
-                      stroke="white"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </div>
-
-                {isOpen && (
-                  <div className="absolute bg-slate-900 font-normal flex flex-col gap-2 w-max rounded-lg p-4 top-10 left-1/2 -translate-x-1/2">
-                    <a
-                      href="/marketplace"
-                      className="hover:translate-x-1 hover:text-slate-500 transition"
-                    >
-                      買賣刊登資訊
-                    </a>
-                  </div>
-                )}
-              </div>
-
-              <div className="px-4 py-2">測試1</div>
-
-              <div className="px-4 py-2">測試2</div>
-
-              <div className="px-4 py-2">測試3</div>
-            </div>
-          </div>
-          {/* 中間路由選單 */}
-          <button className="hidden md:block bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-full transition">
-            前往贊助
-          </button>
-          <button className="block md:hidden bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-full transition">
-            手機模式註冊!!
-          </button>
-        </div>
+        {!pathname.includes("/admin") && <Navbar />}
 
         <div className="flex flex-wrap items-center justify-center p-1.5 mt-32 rounded-full border border-indigo-900 text-xs">
           <div className="flex items-center -space-x-3">
@@ -180,9 +109,9 @@ export default function Hero() {
               placeholder="輸入虛寶關鍵字..."
               className="pl-2 flex-1 outline-none"
             />
-            <button className="bg-indigo-600 text-white p-3 px-6 rounded-md cursor-pointer">
+            <div className="bg-indigo-600 text-white p-3 px-6 rounded-md cursor-pointer">
               查詢
-            </button>
+            </div>
           </label>
         </form>
       </section>
