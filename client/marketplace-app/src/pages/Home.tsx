@@ -1,9 +1,8 @@
-import React from "react";
 import Hero from "../components/Hero";
 
 const Home = () => {
   return (
-    <div>
+    <div className="border-amber-300 border-2">
       <Hero />
     </div>
   );
