@@ -4,3 +4,10 @@
 * {
   font-family: "Rethink Sans", sans-serif;
 }
+
+@theme {
+  /* Colors */
+  --color-brightColor: #039bab;
+  --color-backgroundColor: #03c9d7;
+  --color-textColor: #333333;
+}
