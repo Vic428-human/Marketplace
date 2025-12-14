@@ -11,3 +11,14 @@
   --color-backgroundColor: #03c9d7;
   --color-textColor: #333333;
 }
+
+@layer components {
+  .centered-grid {
+    @apply absolute 
+       left-1/2 -translate-x-1/2   /* 將元素的左邊界移到容器寬度的一半，再往左平移自身寬度的一半，達到水平置中 */
+       top-[95%] -translate-y-full   /* 預設情況下（非 lg）靠近容器底部（約 95% 高），再往上移自身高度，使元素「貼在底邊外面」 */
+       lg:top-1/2 lg:-translate-y-1/2  /* 到大螢幕時改成垂直置中 */
+       grid grid-cols-1 /* Grid 提供明確的行列控制，可精準控制子元素跨欄  */
+       z-5;
+  }
+}
