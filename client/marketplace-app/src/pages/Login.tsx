@@ -10,6 +10,10 @@ const SlidingLoginSignup = () => {
 
   const toggleSignUpMode = () => {
     setIsSignUpMode(!isSignUpMode);
+
+    const centerHorizontally = "left-1/2 -translate-x-1/2";
+    const positionBottomTooltip = "top-[95%] -translate-y-full";
+    const positionCenterVertical = "lg:top-1/2";
   };
 
   // Common button styles
@@ -22,20 +26,23 @@ const SlidingLoginSignup = () => {
 
   return (
     <div className={""}>
+      {/* 可移動的「面板群」 */}
       <div className="absolute w-full h-full top-0 left-0">
-        <div
-          className={` absolute top-[95%] lg:top-1/2 left-1/2 grid grid-cols-1 z-[5] -translate-x-1/2 
+        {/* <div
+          // 註冊出現在左邊，登入出現在右邊
+          className={`absolute top-[95%] lg:top-1/2 left-1/2 grid grid-cols-1 z-[5] -translate-x-1/2 
              -translate-y-full lg:-translate-y-1/2 lg:w-1/2 w-full  transition-[1s]  duration-[0.8s] 
-             lg:duration-[0.7s] ease-[ease-in-out] "  ${
+             lg:duration-[0.7s] ease-[ease-in-out] " ${
                isSignUpMode
-                 ? "lg:left-1/4  max-lg:top-[-10%]   max-lg:-translate-x-2/4   max-lg:translate-y-0"
+                 ? "lg:left-1/4 max-lg:top[10%] max-lg:-translate-x-2/4 max-lg:translate-y-0"
                  : "lg:left-3/4 "
              } `}
-        >
+        > */}
+        <div className="centered-grid">
           {/* 登入面板 */}
           <div
             className={`flex items-center justify-center flex-col transition-all duration-[0.02s] delay-[0.2s] 
-              overflow-hidden col-start-1 col-end-2 row-start-1 row-end-2 px-20 max-lg:mt-60  z-20 max-md:px-6 
+              overflow-hidden col-start-1 col-end-2 row-start-1 row-end-2 px-20 max-lg:mt-60 z-20 max-md:px-6 
               max-md:py-0 ${isSignUpMode ? "" : "opacity-100 z-20"}`}
           >
             <SignInForm
@@ -62,7 +69,7 @@ const SlidingLoginSignup = () => {
       </div>
 
       <div
-        className="absolute h-full w-full top-0 left-0 grid grid-cols-1   max-lg:grid-rows-[1fr_2fr_1fr]  
+        className="absolute w-full h-full top-0 left-0 grid grid-cols-1 max-lg:grid-rows-[1fr_2fr_1fr]  
       lg:grid-cols-2"
       >
         <div
