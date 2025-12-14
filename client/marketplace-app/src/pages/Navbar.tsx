@@ -32,7 +32,6 @@ const Navbar = () => {
             預計 2025 年 12 月 31 日上線
           </p>
         </div>
-        {/* 第一層 Nav */}
         <div className=" flex items-center justify-between p-4"></div>
         <div className="flex items-center border mx-4 w-full h-full max-w-4xl justify-between border-slate-700 px-4 py-2.5 rounded-full text-black overflow-visible">
           <div className="hidden md:block">
@@ -98,9 +97,12 @@ const Navbar = () => {
               </div>
             </div>
           </div>
-          <div className="hidden md:block bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-full transition">
+          <Link
+            to="/login"
+            className="hidden md:block bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-full transition"
+          >
             Login
-          </div>
+          </Link>
           {/* 中間路由選單 */}
 
           <div>
@@ -122,7 +124,11 @@ const Navbar = () => {
         <Link to="/" className="text-white" onClick={() => setMenuOpen(false)}>
           首頁
         </Link>
-        <Link to="/marketplace" className="text-white">
+        <Link
+          to="/marketplace"
+          className="text-white"
+          onClick={() => setMenuOpen(false)}
+        >
           市集
         </Link>
         <div className=" bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-full transition">
