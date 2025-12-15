@@ -10,10 +10,6 @@ const SlidingLoginSignup = () => {
 
   const toggleSignUpMode = () => {
     setIsSignUpMode(!isSignUpMode);
-
-    const centerHorizontally = "left-1/2 -translate-x-1/2";
-    const positionBottomTooltip = "top-[95%] -translate-y-full";
-    const positionCenterVertical = "lg:top-1/2";
   };
 
   // Common button styles
@@ -25,67 +21,27 @@ const SlidingLoginSignup = () => {
     duration-200 hover:shadow hover:border-gray-400`;
 
   return (
-    <div className={""}>
-      {/* 可移動的「面板群」 */}
-      <div className="absolute w-full h-full top-0 left-0">
-        {/* <div
-          // 註冊出現在左邊，登入出現在右邊
-          className={`absolute top-[95%] lg:top-1/2 left-1/2 grid grid-cols-1 z-[5] -translate-x-1/2 
-             -translate-y-full lg:-translate-y-1/2 lg:w-1/2 w-full  transition-[1s]  duration-[0.8s] 
-             lg:duration-[0.7s] ease-[ease-in-out] " ${
-               isSignUpMode
-                 ? "lg:left-1/4 max-lg:top[10%] max-lg:-translate-x-2/4 max-lg:translate-y-0"
-                 : "lg:left-3/4 "
-             } `}
-        > */}
-        <div className="centered-grid">
-          {/* 登入面板 */}
-          <div
-            className={`flex items-center justify-center flex-col transition-all duration-[0.02s] delay-[0.2s] 
-              overflow-hidden col-start-1 col-end-2 row-start-1 row-end-2 px-20 max-lg:mt-60 z-20 max-md:px-6 
-              max-md:py-0 ${isSignUpMode ? "" : "opacity-100 z-20"}`}
-          >
-            <SignInForm
-              buttonClasses={buttonClasses}
-              buttonForGFT={buttonForGFT}
-              toggleSignUpMode={toggleSignUpMode}
-            />
-          </div>
-          {/* 註冊面板 */}
-          <div
-            className={`flex items-center justify-center flex-col px-20 transition-all ease-in-out duration-[0.2s]
-               delay-[0.7s] overflow-hidden col-start-1 col-end-2 row-start-1 row-end-2 py-0 z-10 max-md:px-6 
-               max-md:py-0 opacity-0 ${
-                 isSignUpMode ? "opacity-100 z-20 " : "  "
-               }`}
-          >
-            <SignUpForm
-              buttonClasses={buttonClasses}
-              buttonForGFT={buttonForGFT}
-              toggleSignUpMode={toggleSignUpMode}
-            />
-          </div>
-        </div>
-      </div>
+    <div>
+      {/* 主要區分兩大塊，登入登出的文字訊息以及登入註冊面板區域，都先把這兩區域定位在最左上角 */}
 
-      <div
-        className="absolute w-full h-full top-0 left-0 grid grid-cols-1 max-lg:grid-rows-[1fr_2fr_1fr]  
-      lg:grid-cols-2"
-      >
+      {/* 1. 登入登出的文字訊息 */}
+      {/* TODO: 下次處理 登入面板對應的文字 跟 登出面板對應的文字的定位，因為要做滑出效果 */}
+      <div className="absolute w-full h-full top-0 left-0">
+        {/* 右邊是登入面板，左邊是登入面板顯示的文字訊息 */}
         <div
-          className={`flex flex-row justify-around lg:flex-col items-center  max-lg:col-start-1 max-lg:col-end-2  
-            max-lg:px-[8%]   max-lg:py-10 lg:items-end  text-center z-[6]   max-lg:row-start-1 max-lg:row-end-2    
-             pl-[12%] pr-[17%] pt-12 pb-8 ${
-               isSignUpMode ? "pointer-events-none" : " pointer-events-auto"
-             }`}
+        // className={`flex flex-row justify-around lg:flex-col items-center  max-lg:col-start-1 max-lg:col-end-2
+        //   max-lg:px-[8%] max-lg:py-10 lg:items-end  text-center z-6  max-lg:row-start-1 max-lg:row-end-2
+        //    pl-[12%] pr-[17%] pt-12 pb-8 ${
+        //      isSignUpMode ? "pointer-events-none" : "pointer-events-auto"
+        //    }`}
         >
           <div
-            className={`text-white transition-transform duration-[0.9s]  lg:duration-[1.1s] ease-[ease-in-out] 
-               delay-[0.8s] lg:delay-[0.4s]   max-lg:pr-[15%]  max-md:px-4  max-md:py-2 ${
-                 isSignUpMode
-                   ? "lg:translate-x-[-800px]   max-lg:translate-y-[-300px]"
-                   : ""
-               }`}
+            className={`text-white transition-transform duration-[0.9s]  lg:duration-[1.1s] ease-[ease-in-out]
+             delay-[0.8s] lg:delay-[0.4s] max-lg:pr-[15%]  max-md:px-4  max-md:py-2 ${
+               isSignUpMode
+                 ? "lg:translate-x-[-800px] max-lg:translate-y-[-300px]"
+                 : ""
+             }`}
           >
             <h3 className="font-semibold leading-none text-[1.2rem] lg:text-[1.5rem] text-gray-700">
               第一次來?
@@ -104,20 +60,21 @@ const SlidingLoginSignup = () => {
             </button>
           </div>
         </div>
+        {/* 左邊是註冊面板，右邊是註冊面板顯示的文字訊息 */}
         <div
-          className={`flex flex-row   max-lg:row-start-3 max-lg:row-end-4 lg:flex-col items-center lg:items-end 
-            justify-around text-center z-[6]   max-lg:col-start-1 max-lg:col-end-2  max-lg:px-[8%]   max-lg:py-10 
-             pl-[17%] pr-[12%] pt-12 pb-8 ${
-               isSignUpMode ? " pointer-events-auto" : "pointer-events-none"
-             }`}
+        // className={`flex flex-row   max-lg:row-start-3 max-lg:row-end-4 lg:flex-col items-center lg:items-end
+        //   justify-around text-center z-[6]   max-lg:col-start-1 max-lg:col-end-2  max-lg:px-[8%]   max-lg:py-10
+        //    pl-[17%] pr-[12%] pt-12 pb-8 ${
+        //      isSignUpMode ? " pointer-events-auto" : "pointer-events-none"
+        //    }`}
         >
           <div
-            className={`text-white transition-transform duration-[0.9s] lg:duration-[1.1s] ease-in-out delay-[0.8s]
-               lg:delay-[0.4s]   max-lg:pr-[15%] max-md:px-4  max-md:py-2 ${
-                 isSignUpMode
-                   ? ""
-                   : "lg:translate-x-[800px]   max-lg:translate-y-[300px]"
-               }`}
+          // className={`text-white transition-transform duration-[0.9s] lg:duration-[1.1s] ease-in-out delay-[0.8s]
+          //  lg:delay-[0.4s] max-lg:pr-[15%] max-md:px-4  max-md:py-2 ${
+          //    isSignUpMode
+          //      ? ""
+          //      : "lg:translate-x-[800px] max-lg:translate-y-[300px]"
+          //  }`}
           >
             <h3 className="font-semibold leading-none text-[1.2rem] lg:text-[1.5rem] text-gray-700">
               已經註冊了 ?
@@ -134,6 +91,46 @@ const SlidingLoginSignup = () => {
             >
               立即登入
             </button>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. 登入註冊面板區域 */}
+      <div className="absolute w-full h-full top-0 left-0">
+        {/* 以轉場滑入方式元素進入中間位置，進入手機模式時移動的比較慢，轉場城桌面時一定的快一些。 */}
+        {/* 製作方式: 先把登入登出面板想辦法置中，解決後透過mode去控制登入或登出模式，以 lg:left-1/x 方式將面板定位在特定位置，這樣mode切換後，就會有登入登出面板左右切換的效果，接著，再把面板對應的文字區域以滑出方式處理，就會有互動效果*/}
+        {/* lg >= 1024px */}
+        {/* max-lg < 1024px */}
+        <div
+          className={`centered-grid w-full duration-1000 lg:duration-700 ease-[ease-in-out]  ${
+            isSignUpMode ? "lg:left-1/4" : "lg:left-3/4 "
+          } `}
+        >
+          {/* 登入面板 isSignUpMode = false */}
+          <div
+            className={`flex items-center justify-center flex-col transition-all duration-[0.02s] delay-[0.2s] 
+              overflow-hidden col-start-1 col-end-2 row-start-1 row-end-2 px-20 max-lg:mt-60 z-20 max-md:px-6 
+              max-md:py-0 ${isSignUpMode ? "" : "opacity-100 z-20"}`}
+          >
+            <SignInForm
+              buttonClasses={buttonClasses}
+              buttonForGFT={buttonForGFT}
+              toggleSignUpMode={toggleSignUpMode}
+            />
+          </div>
+          {/* 註冊面板 isSignUpMode = true */}
+          <div
+            className={`flex items-center justify-center flex-col px-20 transition-all ease-in-out duration-[0.2s]
+               delay-[0.7s] overflow-hidden col-start-1 col-end-2 row-start-1 row-end-2 py-0 z-10 max-md:px-6 
+               max-md:py-0 opacity-0 ${
+                 isSignUpMode ? "opacity-100 z-20 " : "  "
+               }`}
+          >
+            <SignUpForm
+              buttonClasses={buttonClasses}
+              buttonForGFT={buttonForGFT}
+              toggleSignUpMode={toggleSignUpMode}
+            />
           </div>
         </div>
       </div>
