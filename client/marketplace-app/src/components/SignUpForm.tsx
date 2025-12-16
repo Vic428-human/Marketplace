@@ -140,7 +140,7 @@ const SignUpForm = ({ buttonClasses, buttonForGFT, toggleSignUpMode }) => {
 
         <div className="">
           {/* Discord */}
-          <a className="flex items-center py-2 px-4 rounded-lg bg-[#5865F2] hover:bg-[#5865F2]/80 hover:text-white/80 transition-colors duration-300">
+          <a className="flex items-center py-2 px-4 rounded-lg bg-[#5865F2] hover:bg-[#5865F2]/80 hover:text-white/80 hover:scale-[1.02] hover:shadow-md transition-colors duration-300">
             <DiscordIcon className="h-7 w-7 fill-white hover:fill-white/80 mr-4" />
             <span className="tex-sm">Discord 註冊</span>
           </a>
